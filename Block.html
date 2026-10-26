@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="mn">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light" />
+<title>Цэнгазар ХХК | Хөнгөн блокийн тооцоолуур</title>
+<style>
+  :root{--accent:#f9a01b;--accent-soft:#fff0d5;--ink:#182b34;--muted:#65757a;--line:#dbe3e1;--bg:#f4f6f5;--white:#fff;--green:#276b50;--err:#b44331;--shadow:0 12px 35px rgba(26,48,53,.07);font-family:Arial,"Noto Sans",sans-serif;color:var(--ink)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);line-height:1.5}
+  .accent-line{height:7px;background:var(--accent)}
+  .shell{max-width:1250px;padding:28px 26px 70px;margin:auto}
+  header.site{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:27px}
+  .brand{display:flex;align-items:center;gap:12px}
+  .brand-mark{width:48px;height:48px;border-radius:12px;background:var(--accent);display:grid;place-items:center;color:#262723;font-size:22px;font-weight:900;letter-spacing:-4px;padding-right:4px}
+  .brand h1{margin:0;font-size:19px;letter-spacing:.01em;line-height:1.25}
+  .brand p{margin:1px 0 0;color:var(--muted);font-size:12px}
+  .phone{font-weight:800;font-size:22px;letter-spacing:.015em;white-space:nowrap}
+  .phone small{display:block;color:var(--muted);font-size:11px;font-weight:500;letter-spacing:0;text-align:right}
+  .intro{margin-bottom:24px}
+  .eyebrow{font-size:12px;color:#92590b;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+  .intro h2{font-size:clamp(27px,4vw,39px);letter-spacing:-.045em;margin:6px 0 9px;line-height:1.2}
+  .intro p{margin:0;color:var(--muted);max-width:650px;font-size:14px}
+  .workspace{display:grid;grid-template-columns:minmax(0,1.13fr) minmax(345px,.87fr);gap:22px;align-items:start}
+  .panel{background:white;border:1px solid #e5e9e7;border-radius:18px;box-shadow:var(--shadow);overflow:hidden}
+  .pad{padding:24px}
+  .panel-header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+  h3{margin:0;font-size:18px;letter-spacing:-.015em}
+  .hint{font-size:12px;color:var(--muted)}
+  .mode-switch{padding:5px;background:#f0f3f2;border-radius:13px;display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:24px}
+  .mode-switch button{padding:11px 8px;border-radius:9px;border:0;background:none;color:#516066;font:700 13px Arial,"Noto Sans",sans-serif;cursor:pointer}
+  .mode-switch button.active{background:#fff;box-shadow:0 2px 7px #21343a18;color:#172b34}
+  .field-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}
+  .field{display:flex;flex-direction:column;gap:6px;min-width:0}
+  .field.full{grid-column:1 / -1}
+  label{font-weight:700;font-size:12px;color:#3e5055}
+  .sub{font-size:11px;color:#829093;font-weight:400}
+  input,select,textarea{width:100%;border:1px solid #d5dfdc;border-radius:10px;padding:11px 12px;background:#fff;font-family:inherit;font-size:14px;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+  input:focus,select:focus,textarea:focus{outline:0;border-color:#e8a33b;box-shadow:0 0 0 3px #f9a01b22}
+  input[type=number]{font-variant-numeric:tabular-nums}
+  textarea{min-height:62px;resize:vertical}
+  input[readonly]{background:#f7f9f8;color:#6a7779}
+  .sectionline{margin:22px 0 19px;border:0;border-top:1px solid #e7ecea}
+  .group-label{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-weight:800;font-size:14px}
+  .tag{border-radius:20px;padding:3px 10px;font-size:10px;color:#886017;background:#fff2de;white-space:nowrap}
+  .checkbox-wrap{background:#f7f9f7;border:1px solid #e7ebe8;padding:12px;border-radius:12px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .checkbox-wrap strong{font-size:13px;display:block}
+  .checkbox-wrap small{color:var(--muted);font-size:11px;display:block}
+  .switch{position:relative;width:45px;height:26px;flex:0 0 45px;cursor:pointer}
+  .switch input{position:absolute;opacity:0;width:100%;height:100%;margin:0}
+  .track{display:block;background:#ced5d1;width:45px;height:26px;border-radius:20px;transition:background .2s}
+  .track:before{content:"";position:absolute;width:20px;height:20px;left:3px;top:3px;background:white;border-radius:50%;box-shadow:0 1px 3px #0002;transition:transform .2s}
+  .switch input:checked+.track{background:#2e785e}.switch input:checked+.track:before{transform:translateX(19px)}
+  .dim-note{background:#f7f9f8;border-radius:10px;padding:12px;font-size:12px;color:#526367;line-height:1.65}
+  .dim-note b{font-weight:800;color:var(--ink)}
+  .results{position:sticky;top:20px}
+  .summary-head{padding:24px 24px 20px;background:#183b3c;color:white}
+  .summary-head .eyebrow{color:#e9b957;font-size:11px}
+  .summary-head h3{font-size:23px;letter-spacing:-.03em;margin:5px 0 0;color:#fff}
+  .topmetrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:20px 22px 0}
+  .metric{background:#f4f7f5;border-radius:12px;padding:13px 13px 14px}
+  .metric span{display:block;color:#637377;font-size:11px;min-height:16px}
+  .metric strong{font-size:24px;font-variant-numeric:tabular-nums;letter-spacing:-.04em;display:block;line-height:1.35;margin-top:6px}
+  .metric em{font-size:11px;font-style:normal;color:#667575}
+  .cost-table{padding:13px 24px 6px}
+  .cost-row{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #eef1ef;font-size:13px}
+  .cost-row span{color:#67767a}.cost-row strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+  .total{padding:19px 23px 20px;background:#fff3df;display:flex;justify-content:space-between;align-items:end;gap:15px;margin:12px 19px;border-radius:12px}
+  .total label{font-size:12px;color:#705426}.total strong{font-size:29px;line-height:1.2;white-space:nowrap;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+  .note{padding:0 23px 21px;font-size:11px;color:#78868a;line-height:1.55}
+  .actions{display:flex;flex-wrap:wrap;gap:10px;padding:0 22px 23px}
+  button.action{border:0;padding:13px 14px;border-radius:11px;cursor:pointer;font-weight:800;font-size:13px;font-family:inherit;transition:transform .15s,filter .15s}
+  button.action:hover{filter:brightness(.97);transform:translateY(-1px)}
+  .primary{background:var(--accent);color:#1c2c32;flex:1 1 200px}
+  .secondary{background:#f1f4f2;color:#314b50;flex:1 1 110px}
+  .muted-text{margin-top:6px;color:#718085;font-size:11px}
+  .foot{margin-top:18px;color:#7a8589;font-size:12px;display:flex;gap:15px;justify-content:space-between;flex-wrap:wrap}
+  .hidden{display:none!important}
+  .error{border:1px solid #f2c3be;background:#fff4f3;color:#ae3f35;padding:10px 12px;border-radius:10px;font-size:12px;margin-bottom:14px}
+  #printArea{display:none}
+  @media(max-width:860px){.workspace{grid-template-columns:1fr}.results{position:static}.shell{padding:18px 15px 45px}.pad{padding:19px}.phone{font-size:18px}.topmetrics{padding:16px 16px 0}.cost-table{padding-left:18px;padding-right:18px}}
+  @media(max-width:420px){.field-grid{gap:12px}.field-grid .mobile-full{grid-column:1/-1}.brand h1{font-size:16px}.brand-mark{width:40px;height:40px}.phone{font-size:16px}.topmetrics .metric strong{font-size:21px}.total strong{font-size:24px}}
+  @page{size:A4 portrait;margin:13mm}
+  @media print{
+    body{background:white;color:#192b35;print-color-adjust:exact;-webkit-print-color-adjust:exact}
+    .accent-line,.shell{display:none!important}
+    #printArea{display:block!important;font-family:Arial,"Noto Sans",sans-serif;color:#1e3339;font-size:11px}
+    .print-top{display:flex;justify-content:space-between;border-top:7px solid #f9a01b;padding-top:19px;align-items:flex-start}
+    .print-brand{font-size:22px;font-weight:900;color:#183b3c}
+    .print-brand small{display:block;font-size:10px;font-weight:400;color:#617175}
+    .print-right{text-align:right;font-size:11px}
+    .print-title{font-weight:900;font-size:25px;margin:39px 0 5px;letter-spacing:-.01em}
+    .print-sub{color:#697777}
+    .print-box{display:grid;grid-template-columns:1fr 1fr;gap:14px;background:#f4f7f5;padding:17px;border-radius:8px;margin:23px 0}
+    .print-box div{margin:6px 0}
+    .print-label{display:inline-block;min-width:100px;color:#62747b}
+    .print-table{border-collapse:collapse;width:100%;margin-top:20px}
+    .print-table th{background:#183b3c;color:white;padding:11px;text-align:left;font-size:10px}
+    .print-table td{padding:15px 11px;border-bottom:1px solid #d5dedb}
+    .print-table th:last-child,.print-table td:last-child{text-align:right}
+    .print-totals{margin:25px 0 20px auto;width:55%;min-width:290px}
+    .print-totals .cost-row{font-size:11px;padding:8px 0}
+    .print-grand{background:#fff1d8;padding:13px 15px;display:flex;justify-content:space-between;font-size:17px;font-weight:900}
+    .print-footer{border-top:1px solid #dce5e1;margin-top:65px;padding-top:15px;color:#6e7a7a;font-size:10px}
+  }
+</style>
+</head>
+<body>
+<div class="accent-line"></div>
+<main class="shell">
+ <header class="site">
+  <div class="brand"><div class="brand-mark">Ц</div><div><h1>ЦЭНГАЗАР ХХК</h1><p>Хөнгөн блокийн онлайн тооцоолуур</p></div></div>
+  <div class="phone"><small>Лавлах утас</small>8811 3350</div>
+ </header>
+ <div class="intro"><span class="eyebrow">BLOCK CALCULATOR & QUOTATION</span><h2>Блокийн хэрэгцээ, үнийн тооцоо</h2><p>Байшингийн хэмжээс эсвэл захиалах хэмжээг оруулж, шаардлагатай блокийн тоо, м³, төсөв болон PDF үнийн саналаа шууд гаргаарай.</p></div>
+ <div class="workspace">
+  <section class="panel pad">
+   <div class="panel-header"><h3>01 · Тооцооны мэдээлэл</h3><span class="tag">Автомат тооцоо</span></div>
+   <div class="mode-switch" role="tablist" aria-label="Тооцооны төрөл">
+    <button type="button" id="modeHouse" role="tab" aria-selected="true" class="active">⌂ Байшингийн хэмжээгээр</button>
+    <button type="button" id="modeManual" role="tab" aria-selected="false">▦ М³ / ширхэгээр</button>
+   </div>
+   <div id="errorBox" class="error hidden" role="alert"></div>
+   <div id="houseFields">
+    <div class="field-grid">
+     <div class="field"><label for="length">Байшингийн урт <span class="sub">(м)</span></label><input id="length" type="number" min="0" step="0.1" value="10"></div>
+     <div class="field"><label for="width">Байшингийн өргөн <span class="sub">(м)</span></label><input id="width" type="number" min="0" step="0.1" value="8"></div>
+     <div class="field"><label for="height">Ханын өндөр <span class="sub">(м)</span></label><input id="height" type="number" min="0" step="0.1" value="2.5"></div>
+     <div class="field"><label for="waste">Нөөц, хаягдал <span class="sub">(%)</span></label><input id="waste" type="number" min="0" max="100" step="1" value="5"></div>
+     <div class="field"><label for="windows">Цонхны нийт талбай <span class="sub">(м²)</span></label><input id="windows" type="number" min="0" step="0.1" value="0"></div>
+     <div class="field"><label for="doors">Хаалганы нийт талбай <span class="sub">(м²)</span></label><input id="doors" type="number" min="0" step="0.1" value="0"></div>
+    </div>
+    <p class="muted-text">Зөвхөн 4 талын гадна ханын тооцоо. Дотор хана, бүтээцийн зангилаа, зураг төслийн нарийвчилсан хасалтууд ороогүй.</p>
+   </div>
+   <div id="manualFields" class="hidden">
+    <div class="field-grid">
+     <div class="field"><label for="orderUnit">Захиалгын нэгж</label><select id="orderUnit"><option value="pieces">Ширхэг</option><option value="volume">м³</option></select></div>
+     <div class="field"><label for="orderQty">Захиалах хэмжээ</label><input id="orderQty" type="number" min="0" step="1" value="50"></div>
+    </div>
+    <p class="muted-text">Ширхэгээр захиалбал яг тэр ширхэгийн эзлэхүүнээр үнийг бодно. М³-ээр захиалбал м³-ийн хэмжээгээр, блокийн ширхэгийг дээш бүхэлчилж ойролцоолно.</p>
+   </div>
+   <hr class="sectionline">
+   <div class="group-label"><span>02 · Бүтээгдэхүүн ба үнэ</span><span class="tag">600 × 240 мм</span></div>
+   <div class="field-grid">
+    <div class="field"><label for="thickness">Блокийн зузаан <span class="sub">(мм)</span></label><select id="thickness"><option value="100">100 мм</option><option value="120">120 мм</option><option value="150">150 мм</option><option value="200">200 мм</option><option value="240">240 мм</option><option value="250">250 мм</option><option value="300" selected>300 мм</option><option value="360">360 мм</option><option value="custom">Бусад хэмжээ</option></select></div>
+    <div class="field hidden" id="customThicknessGroup"><label for="customThickness">Өөр зузаан <span class="sub">(мм)</span></label><input id="customThickness" type="number" min="1" max="1000" value="180" step="1"></div>
+    <div class="field"><label for="unitPrice">1 м³ блокийн үнэ <span class="sub">(₮)</span></label><input id="unitPrice" type="number" min="0" step="1000" value="300000"></div>
+    <div class="field full"><div class="dim-note"><b>Нэг блок:</b> <span id="blockDims">300 × 240 × 600 мм</span> &nbsp;•&nbsp; <b>Эзлэхүүн:</b> <span id="blockVol">0.0432 м³</span> &nbsp;•&nbsp; <b>1 м³-д:</b> <span id="perM3">23.15</span> ширхэг (тооцоолсон)</div></div>
+   </div>
+   <hr class="sectionline">
+   <div class="group-label"><span>03 · Нэмэлт төлбөр</span></div>
+   <div class="checkbox-wrap"><div><strong>Подоны барьцаа нэмэх үү?</strong><small>1 подоны барьцаа: 250,000₮ (буцаан олгох нөхцөлтэй)</small></div><label class="switch" aria-label="Подоны барьцаа"><input type="checkbox" id="usePallet" /><span class="track"></span></label></div>
+   <div class="field-grid" style="margin-top:14px">
+    <div class="field" id="palletCountWrap"><label for="palletCount">Подоны тоо <span class="sub">(ш)</span></label><input id="palletCount" type="number" min="1" step="1" value="1" disabled></div>
+    <div class="field"><label for="palletPrice">1 подоны барьцаа <span class="sub">(₮)</span></label><input id="palletPrice" type="number" min="0" step="1000" value="250000"></div>
+    <div class="field"><label for="discount">Үнийн хөнгөлөлт <span class="sub">(%)</span></label><input id="discount" type="number" min="0" max="100" step="0.5" value="0"></div>
+   </div>
+   <hr class="sectionline">
+   <div class="group-label"><span>04 · Үнийн саналын мэдээлэл</span></div>
+   <div class="field-grid">
+    <div class="field"><label for="customerName">Захиалагчийн нэр</label><input id="customerName" type="text" placeholder="Нэр эсвэл байгууллага"></div>
+    <div class="field"><label for="customerPhone">Холбоо барих утас</label><input id="customerPhone" type="text" placeholder="99xx xxxx"></div>
+    <div class="field"><label for="customerLocation">Барилгын байршил</label><input id="customerLocation" type="text" placeholder="Аймаг, сум"></div>
+    <div class="field"><label for="quoteNumber">Үнийн саналын дугаар</label><input id="quoteNumber" type="text" placeholder="TSG-..."></div>
+    <div class="field"><label for="validDays">Үнийн санал хүчинтэй <span class="sub">(хоног)</span></label><input id="validDays" type="number" min="1" step="1" value="7"></div>
+    <div class="field"><label for="vatStatus">НӨАТ-ын нөхцөл</label><select id="vatStatus"><option value="not-specified">Тодорхойлоогүй</option><option value="included">Үнэд багтсан</option><option value="excluded">Үнэд ороогүй</option></select></div>
+    <div class="field full"><label for="quoteNotes">Нэмэлт тайлбар</label><textarea id="quoteNotes" placeholder="Үнэ тохиролцох нөхцөл, бусад тэмдэглэл"></textarea></div>
+   </div>
+   <p class="muted-text">Үнийн саналын PDF нь энэ төхөөрөмж дээр үүснэ. Нэр, утас зэрэг мэдээлэл сервер рүү илгээгдэхгүй.</p>
+  </section>
+  <aside class="panel results" aria-live="polite">
+   <div class="summary-head"><span class="eyebrow">ТАНЫ ТООЦОО</span><h3>Нийт хэрэгцээ ба төсөв</h3></div>
+   <div class="topmetrics">
+    <div class="metric"><span>Блокийн эзлэхүүн</span><strong id="outVolume">0 м³</strong><em id="volumeDesc">Нөөцтэй тооцсон</em></div>
+    <div class="metric"><span>Блокийн тоо</span><strong id="outPieces">0 ш</strong><em id="piecesDesc">Дээш бүхэлчилсэн</em></div>
+    <div class="metric"><span>Нэг блокийн үнэ</span><strong id="outOnePrice">0₮</strong><em>Ширхэгийн тооцоот үнэ</em></div>
+    <div class="metric"><span>Цэвэр ханын талбай</span><strong id="outArea">0 м²</strong><em id="areaDesc">Гадна ханын талбай</em></div>
+   </div>
+   <div class="cost-table">
+    <div class="cost-row"><span>Блокийн үндсэн үнэ</span><strong id="outBase">0₮</strong></div>
+    <div class="cost-row"><span>Хөнгөлөлт</span><strong id="outDiscount">0₮</strong></div>
+    <div class="cost-row"><span>Подоны барьцаа</span><strong id="outPallet">0₮</strong></div>
+   </div>
+   <div class="total"><div><label>ТООЦООТ НИЙТ ДҮН</label></div><strong id="outTotal">0₮</strong></div>
+   <p id="resultNote" class="note">Энэ нь урьдчилсан тооцоо бөгөөд баталгаат үнийн санал биш.</p>
+   <div class="actions"><button type="button" id="downloadPdf" class="action primary">↓ PDF үнийн санал татах</button><button type="button" id="printPdf" class="action secondary">Хэвлэх / PDF хадгалах</button></div>
+  </aside>
+ </div>
+ <footer class="foot"><span>© Цэнгазар ХХК · Үнийн тооцоолуурын загвар</span><span>Мэдээлэл зөвлөмжийн зориулалттай · Утас: 8811 3350</span></footer>
+</main>
+<div id="printArea"></div>
+<script>
+(function(){'use strict';
+ const $=id=>document.getElementById(id);
+ const fmt=n=>Math.round(n).toLocaleString('en-US');
+ const mnt=n=>fmt(n)+'₮';
+ const dec=(n,places=2)=>Number(n).toLocaleString('en-US',{minimumFractionDigits:places,maximumFractionDigits:places});
+ const val=id=>Math.max(0,Number($(id).value)||0);
+ const esc=s=>String(s??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+ let mode='house';let result=null;
+ const now=new Date(); const dstr=now.getFullYear()+String(now.getMonth()+1).padStart(2,'0')+String(now.getDate()).padStart(2,'0');
+ $('quoteNumber').value='TSG-'+dstr+'-001';
+ function dateLabel(){return new Date().toLocaleDateString('mn-MN',{year:'numeric',month:'2-digit',day:'2-digit'});}
+ function getThickness(){return $('thickness').value==='custom'?val('customThickness'):val('thickness')}
+ function setMode(m){mode=m;const house=m==='house';$('modeHouse').classList.toggle('active',house);$('modeManual').classList.toggle('active',!house);$('modeHouse').setAttribute('aria-selected',house);$('modeManual').setAttribute('aria-selected',!house);$('houseFields').classList.toggle('hidden',!house);$('manualFields').classList.toggle('hidden',house);calculate()}
+ function calcData(){
+  const t=getThickness(),price=val('unitPrice'),blockVol=t*240*600/1e9,waste=Math.min(100,val('waste'));
+  let area=0,requested=0,pieces=0,volume=0,areaText='',err='';
+  if(t<=0||blockVol<=0)err='Блокийн зузааныг 0-ээс их утгаар оруулна уу.';
+  if(mode==='house'){
+   const L=val('length'),W=val('width'),H=val('height'),op=val('windows')+val('doors');
+   const gross=2*(L+W)*H;
+   if(!L||!W||!H)err='Байшингийн урт, өргөн, ханын өндрийг 0-ээс ихээр оруулна уу.';
+   if(op>gross)err='Цонх, хаалганы талбай нийт ханын талбайгаас их байна.';
+   area=Math.max(0,gross-op);requested=area*t/1000*(1+waste/100);
+   pieces=blockVol>0?Math.ceil(requested/blockVol-1e-8):0;
+   volume=pieces*blockVol;areaText='Гадна ханын цэвэр талбай';
+  } else {
+   const unit=$('orderUnit').value;
+   if(unit==='pieces'){
+    pieces=Math.ceil(val('orderQty'));volume=pieces*blockVol;requested=volume;
+   } else {
+    requested=val('orderQty');pieces=blockVol>0?Math.ceil(requested/blockVol-1e-8):0;volume=requested;
+   }
+   areaText='Байшингийн хэмжээс оруулаагүй';
+  }
+  const discountRate=Math.min(100,val('discount'));
+  const base=volume*price,discount=base*discountRate/100;
+  const withPallet=$('usePallet').checked, pc=withPallet?Math.max(1,Math.ceil(val('palletCount'))):0;
+  const deposit=pc*val('palletPrice');
+  const total=Math.max(0,base-discount+deposit);
+  return {t,price,blockVol,waste,area,requested,pieces,volume,areaText,err,base,discount,discountRate,pc,deposit,total,mode,
+    customer:$('customerName').value.trim()||'Тодорхойлоогүй',phone:$('customerPhone').value.trim()||'—',location:$('customerLocation').value.trim()||'—',
+    number:$('quoteNumber').value.trim()||'TSG-'+dstr+'-001',valid:Math.max(1,Math.ceil(val('validDays'))),vat:$('vatStatus').value,
+    notes:$('quoteNotes').value.trim()};
+ }
+ function calculate(){
+  $('customThicknessGroup').classList.toggle('hidden',$('thickness').value!=='custom');
+  $('palletCount').disabled=!$('usePallet').checked;
+  $('orderQty').step=$('orderUnit').value==='pieces'?'1':'0.01';
+  result=calcData();const r=result;
+  $('errorBox').classList.toggle('hidden',!r.err);$('errorBox').textContent=r.err;
+  $('downloadPdf').disabled=!!r.err;$('printPdf').disabled=!!r.err;
+  $('blockDims').textContent=`${fmt(r.t)} × 240 × 600 мм`;
+  $('blockVol').textContent=dec(r.blockVol,5)+' м³';
+  $('perM3').textContent=r.blockVol?dec(1/r.blockVol,2):'0';
+  $('outVolume').textContent=dec(r.volume,4)+' м³';
+  $('outPieces').textContent=fmt(r.pieces)+' ш';
+  $('outOnePrice').textContent=mnt(r.blockVol*r.price);
+  $('outArea').textContent=r.mode==='house'?dec(r.area,2)+' м²':'—';
+  $('areaDesc').textContent=r.areaText;
+  $('volumeDesc').textContent=r.mode==='house'?'Бүхэл ширхэгт тааруулсан':$('orderUnit').value==='volume'?'Захиалсан м³':'Нийт ширхэгийн эзлэхүүн';
+  $('piecesDesc').textContent=r.mode==='house'||$('orderUnit').value==='volume'?'Дээш бүхэлчилсэн':'Захиалсан ширхэг';
+  $('outBase').textContent=mnt(r.base);
+  $('outDiscount').textContent=r.discount?'-'+mnt(r.discount):'0₮';
+  $('outPallet').textContent=r.deposit?mnt(r.deposit):'0₮';
+  $('outTotal').textContent=mnt(r.total);
+  $('resultNote').textContent=(r.pc?'Подоны барьцаа нь буцаан олгох нөхцөлтэй. ':'')+'Дүн нь урьдчилсан тооцоо. Үнийн хүчинтэй эсэх болон НӨАТ-ын нөхцөлийг борлуулалтын ажилтнаар баталгаажуулна.';
+  updatePrint(r);
+ }
+ function vatLabel(v){return v==='included'?'НӨАТ үнэд багтсан':v==='excluded'?'НӨАТ үнэд ороогүй':'НӨАТ-ын нөхцөл тодорхойлоогүй'}
+ function details(r){return `${fmt(r.t)} × 240 × 600 мм · ${fmt(r.pieces)} ширхэг · ${dec(r.volume,4)} м³`}
+ function updatePrint(r){
+  const modeinfo=r.mode==='house'?`8×10 жишиг биш: ${dec(val('length'),2)} × ${dec(val('width'),2)} м, өндөр ${dec(val('height'),2)} м, цонх ${dec(val('windows'),2)} м², хаалга ${dec(val('doors'),2)} м²; нөөц ${r.waste}%`:
+    `Захиалгын горим: ${$('orderUnit').value==='pieces'?'ширхэгээр':'м³-ээр'}`;
+  $('printArea').innerHTML=`
+  <div class="print-top"><div class="print-brand">ЦЭНГАЗАР ХХК<small>Хөнгөн блок үйлдвэрлэл · 8811 3350</small></div><div class="print-right">Үнийн санал № ${esc(r.number)}<br>${esc(dateLabel())}</div></div>
+  <div class="print-title">УРЬДЧИЛСАН ҮНИЙН САНАЛ</div><div class="print-sub">Барилгын ханын блокийн материалын хэрэгцээ ба үнийн тооцоо</div>
+  <div class="print-box"><section><div><span class="print-label">Захиалагч</span> <strong>${esc(r.customer)}</strong></div><div><span class="print-label">Утас</span> ${esc(r.phone)}</div><div><span class="print-label">Байршил</span> ${esc(r.location)}</div></section><section><div><span class="print-label">Санал хүчинтэй</span> ${fmt(r.valid)} хоног</div><div><span class="print-label">Блокийн төрөл</span> ${esc(fmt(r.t))}×240×600 мм</div><div><span class="print-label">НӨАТ</span> ${esc(vatLabel(r.vat))}</div></section></div>
+  <strong>Тооцооны нөхцөл</strong><p>${esc(modeinfo)}</p>
+  <table class="print-table"><thead><tr><th>Бүтээгдэхүүн</th><th>Эзлэхүүн</th><th>Ширхэг</th><th>Нэгж үнэ</th><th>Нийт</th></tr></thead><tbody><tr><td>Хөнгөн блок<br>${esc(fmt(r.t))}×240×600 мм</td><td>${dec(r.volume,4)} м³</td><td>${fmt(r.pieces)}</td><td>${mnt(r.price)}/м³</td><td>${mnt(r.base)}</td></tr></tbody></table>
+  <div class="print-totals"><div class="cost-row"><span>Блокийн үнэ</span><strong>${mnt(r.base)}</strong></div><div class="cost-row"><span>Хөнгөлөлт (${dec(r.discountRate,1)}%)</span><strong>−${mnt(r.discount)}</strong></div><div class="cost-row"><span>Подоны барьцаа (${fmt(r.pc)} ш)</span><strong>${mnt(r.deposit)}</strong></div><div class="print-grand"><span>НИЙТ ДҮН</span><span>${mnt(r.total)}</span></div></div>
+  <div><strong>Тайлбар</strong><p>${esc(r.notes||'Үнийн санал нь урьдчилсан тооцоо болно. Бүтээгдэхүүний үнэ, захиалгын хэмжээг борлуулалтын ажилтнаар баталгаажуулна.')}</p><p>${r.pc?'Подоны барьцаа буцаан олгох нөхцөлтэй. ':''}${esc(vatLabel(r.vat))}.</p></div>
+  <div class="print-footer"><strong>ЦЭНГАЗАР ХХК</strong> · Холбогдох утас: 8811 3350<br>Энэ нь цахим тооцоолуураас гарсан урьдчилсан үнийн санал бөгөөд баталгаат худалдах гэрээ биш.</div>`;
+ }
+ for(const el of document.querySelectorAll('input,select,textarea'))el.addEventListener('input',calculate);
+ $('modeHouse').addEventListener('click',()=>setMode('house'));
+ $('modeManual').addEventListener('click',()=>setMode('manual'));
+ $('printPdf').addEventListener('click',()=>{if(!result.err)window.print()});
+ function makeCanvas(r){
+  const factor=3,canvas=document.createElement('canvas');canvas.width=Math.ceil(595*factor);canvas.height=Math.ceil(842*factor);
+  const c=canvas.getContext('2d');c.scale(factor,factor);c.fillStyle='#ffffff';c.fillRect(0,0,595,842);
+  const color={ink:'#18343b',dark:'#183b3c',muted:'#65777b',accent:'#f9a01b',cream:'#fff3df',line:'#dce5e0',paper:'#f4f7f5'};
+  const rect=(x,y,w,h,col)=>{c.fillStyle=col;c.fillRect(x,y,w,h)};
+  const text=(t,x,y,size=12,bold=false,fill=color.ink,align='left')=>{c.fillStyle=fill;c.textAlign=align;c.textBaseline='alphabetic';c.font=`${bold?'700':'400'} ${size}px Arial, "Noto Sans", "DejaVu Sans", sans-serif`;c.fillText(String(t),x,y)};
+  const line=(x,y,w,col=color.line)=>rect(x,y,w,.8,col);
+  function wrap(str,x,y,maxWidth,opts={}){
+   const sz=opts.size||11, lh=opts.lineHeight||17, lines=opts.maxLines||3;
+   c.font=`${opts.bold?'700':'400'} ${sz}px Arial,"Noto Sans",sans-serif`;
+   const paragraphs=String(str||'').split(/\n/);let out=[];
+   for(const para of paragraphs){let current='';for(const word of para.split(/\s+/)){
+     if(!word)continue;
+     const next=current?current+' '+word:word;
+     if(c.measureText(next).width>maxWidth&&current){out.push(current);current=word;}else{current=next;}
+   }out.push(current);}
+   if(out.length>lines){out=out.slice(0,lines);let last=out[lines-1];while(last&&c.measureText(last+'…').width>maxWidth)last=last.slice(0,-1);out[lines-1]=last+'…';}
+   out.forEach((s,i)=>text(s,x,y+i*lh,sz,opts.bold,opts.color||color.ink));
+   return y+out.length*lh;
+  }
+  rect(0,0,595,10,color.accent);
+  text('ЦЭНГАЗАР ХХК',40,54,22,true,color.dark);
+  text('Хөнгөн блокийн үйлдвэрлэл',40,74,10,false,color.muted);
+  text('Утас: 8811 3350',555,53,12,true,color.dark,'right');
+  text(dateLabel(),555,73,10,false,color.muted,'right');
+  text('УРЬДЧИЛСАН ҮНИЙН САНАЛ',40,122,23,true,color.dark);
+  text('Тооцоолуураас үүсгэсэн материалын үнийн санал',40,144,11,false,color.muted);
+  rect(40,163,515,104,color.paper);
+  text('ЗАХИАЛАГЧ',53,182,9,true,color.muted);
+  wrap(r.customer,53,201,233,{size:13,bold:true,maxLines:2,lineHeight:15});
+  text('Утас: '+r.phone,53,235,10);
+  text('Байршил: '+r.location,53,252,10);
+  text('САНАЛЫН ДУГААР',321,182,9,true,color.muted);
+  wrap(r.number,321,199,215,{size:12,bold:true,maxLines:1});
+  text('Хүчинтэй хугацаа: '+fmt(r.valid)+' хоног',321,226,10);
+  text('НӨАТ: '+(r.vat==='included'?'Багтсан':r.vat==='excluded'?'Ороогүй':'Тодорхойгүй'),321,245,10);
+  text('ТООЦООНЫ ҮНДЭСЛЭЛ',40,298,11,true,color.dark);
+  if(r.mode==='house'){
+    wrap(`Байшин ${dec(val('length'),1)} × ${dec(val('width'),1)} м · Ханын өндөр ${dec(val('height'),1)} м · Зузаан ${fmt(r.t)} мм`,40,317,515,{size:10.5,maxLines:1});
+    wrap(`Цонх: ${dec(val('windows'),1)} м² · Хаалга: ${dec(val('doors'),1)} м² · Цэвэр ханын талбай: ${dec(r.area,2)} м² · Нөөц: ${fmt(r.waste)}%`,40,334,515,{size:10.5,maxLines:1});
+  }else{
+    text('Захиалгын горим: '+($('orderUnit').value==='pieces'?'ширхэгээр':'эзлэхүүнээр (м³)'),40,317,10.5);
+    text('Блокийн бодит хэмжээ: '+fmt(r.t)+' × 240 × 600 мм',40,334,10.5);
+  }
+  const head=355;
+  rect(40,head,515,39,color.dark);
+  text('БҮТЭЭГДЭХҮҮН',52,378,10,true,'#fff');
+  text('М³',292,378,10,true,'#fff','right');
+  text('Ш',353,378,10,true,'#fff','right');
+  text('ҮНЭ / М³',438,378,10,true,'#fff','right');
+  text('НИЙТ',543,378,10,true,'#fff','right');
+  rect(40,394,515,70,'#fff');
+  text('Хөнгөн блок',52,420,12,true);
+  text(fmt(r.t)+'×240×600 мм',52,439,10,false,color.muted);
+  text(dec(r.volume,3),292,427,10,false,color.ink,'right');
+  text(fmt(r.pieces),353,427,10,false,color.ink,'right');
+  text(fmt(r.price)+'₮',438,427,10,false,color.ink,'right');
+  text(mnt(r.base),543,427,10,true,color.dark,'right');
+  line(40,465,515);
+  function priceLine(label,value,y){text(label,308,y,10.5,false,color.muted);text(value,543,y,11,true,color.dark,'right');line(308,y+11,235)}
+  priceLine('Блокийн үндсэн үнэ',mnt(r.base),497);
+  priceLine('Хөнгөлөлт '+dec(r.discountRate,1)+'%',r.discount?'−'+mnt(r.discount):'0₮',530);
+  priceLine('Подоны барьцаа · '+fmt(r.pc)+' ш',mnt(r.deposit),563);
+  rect(297,595,258,59,color.cream);
+  text('НИЙТ ТӨЛӨХ ДҮН',309,614,10,true,'#704b20');
+  text(mnt(r.total),541,637,20,true,color.ink,'right');
+  text('НӨХЦӨЛ, ТАЙЛБАР',40,688,11,true,color.dark);
+  const note=(r.notes?r.notes+' ':'')+(r.pc?'Подоны барьцааг нөхцөлийн дагуу буцаан олгоно. ':'')+'Энэхүү санал нь урьдчилсан тооцоо бөгөөд борлуулалтын ажилтнаар баталгаажуулна.';
+  wrap(note,40,709,515,{size:9.6,lineHeight:15,maxLines:3,color:color.muted});
+  line(40,793,515);
+  text('ЦЭНГАЗАР ХХК · 8811 3350',40,813,10,true,color.dark);
+  text('Цахим урьдчилсан тооцоолол',555,813,9,false,color.muted,'right');
+  return canvas;
+ }
+ async function pdfFromCanvas(canvas){
+  const jpeg=await new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('Canvas бэлтгэхэд алдаа гарлаа.')),'image/jpeg',.92));
+  const bytes=new Uint8Array(await jpeg.arrayBuffer());
+  const parts=[];let offset=0;const starts=[0];const enc=new TextEncoder();
+  function push(b){const val=typeof b==='string'?enc.encode(b):b;parts.push(val);offset+=val.length}
+  function object(n,body){starts[n]=offset;push(n+' 0 obj\n'+body+'\nendobj\n')}
+  push('%PDF-1.4\n%\xC3\xA2\xC3\xA3\xC3\x8F\xC3\x93\n');
+  object(1,'<< /Type /Catalog /Pages 2 0 R >>');
+  object(2,'<< /Type /Pages /Kids [3 0 R] /Count 1 >>');
+  object(3,'<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>');
+  const stream='q\n595 0 0 842 0 0 cm\n/Im0 Do\nQ\n';
+  object(4,'<< /Length '+enc.encode(stream).length+' >>\nstream\n'+stream+'endstream');
+  starts[5]=offset;
+  push('5 0 obj\n<< /Type /XObject /Subtype /Image /Width '+canvas.width+' /Height '+canvas.height+' /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length '+bytes.length+' >>\nstream\n');
+  push(bytes);push('\nendstream\nendobj\n');
+  const xref=offset;
+  push('xref\n0 6\n0000000000 65535 f \n');
+  for(let n=1;n<=5;n++)push(String(starts[n]).padStart(10,'0')+' 00000 n \n');
+  push('trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n'+xref+'\n%%EOF');
+  return new Blob(parts,{type:'application/pdf'});
+ }
+ $('downloadPdf').addEventListener('click',async()=>{
+  calculate();if(result.err)return;
+  const btn=$('downloadPdf'),original=btn.textContent;btn.disabled=true;btn.textContent='PDF бэлтгэж байна...';
+  try{const pdf=await pdfFromCanvas(makeCanvas(result));const link=document.createElement('a');const url=URL.createObjectURL(pdf);link.href=url;
+   const safe=(result.number||'Tsengazar').replace(/[^a-zA-Z0-9_-]/g,'_');link.download='Tsengazar_UniinSanal_'+safe+'.pdf';
+   document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+  }catch(e){console.error(e);alert('PDF гаргахад алдаа гарлаа. «Хэвлэх / PDF хадгалах» сонголтыг ашиглаж болно.');}
+  finally{btn.textContent=original;btn.disabled=false;}
+ });
+ calculate();
+})();
+</script>
+</body></html>
