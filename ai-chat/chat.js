@@ -25,7 +25,7 @@
   const header = build('div','kh-ai-head',panel);
   const hgroup = build('div','',header);
   build('strong','',hgroup,'Хантайшир AI зөвлөх');
-  build('small','',hgroup,'Автомат AI туслах · 24/7 асуулт');
+  build('small','',hgroup,'Автомат AI туслах · худалдааны мэдээлэл');
   const close = build('button','kh-ai-close',header,'×');
   close.type='button';close.setAttribute('aria-label','Чат хаах');
   const feed = build('div','kh-ai-messages',panel);
