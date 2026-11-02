@@ -109,6 +109,15 @@ dialog{width:min(640px,calc(100vw - 30px));max-height:90vh;overflow:auto;border:
 .nav .home-link .icon{width:20px;height:20px}
 .about-visual .about-picture.secondary{grid-row:span 2}
 @media(max-width:600px){.nav .home-link{justify-content:flex-start;padding-left:8px}}
+.dealer-dialog{width:min(660px,calc(100vw - 24px));max-height:min(90dvh,850px)}
+.dealer-dialog .modal-body{padding:24px 28px}
+.dealer-dialog form{margin-top:16px}
+.dealer-dialog .quote-fields{gap:13px}
+.dealer-dialog .dealer-note{font-size:13px;color:var(--muted);line-height:1.5}
+.dealer-dialog .quote-privacy{margin:15px 0}
+.dealer-dialog .modal-status{margin:15px 0 0}
+.dealer-dialog .dealer-copy-text{width:100%;margin-top:12px}
+@media(max-width:600px){.dealer-dialog .modal-body{padding:19px 16px}.dealer-dialog .quote-fields{grid-template-columns:1fr}.dealer-dialog .quote-fields .span2{grid-column:1}}
 </style>
 <link rel="stylesheet" href="./ai-chat/chat.css">
 <script src="./ai-chat/chat.js" defer></script>
@@ -269,8 +278,8 @@ dialog{width:min(640px,calc(100vw - 30px));max-height:90vh;overflow:auto;border:
 <section class="section" id="dealer" style="padding-top:0"><div class="container">
  <div class="dealer-band" data-reveal="">
   <div class="badge"><svg class="icon"><use href="#i-handshake"></use></svg></div>
-  <div><h2>Гэрээт борлуулагчаар бүртгүүлэх</h2><p>Ховд, Баян-Өлгий, Увс, Завхан аймагт гэрээт борлуулагч болж бизнесээ өргөжүүлээрэй.</p></div>
-  <div class="btns"><a class="btn btn-orange" href="#quote" id="dealerCta">Хүсэлт үлдээх <svg class="icon"><use href="#i-arrow"></use></svg></a><a class="btn btn-white" href="tel:+97686000254"><svg class="icon"><use href="#i-phone"></use></svg> 8600 0254</a></div>
+  <div><h2>Дилерийн хамтын ажиллагаа</h2><p>Баруун бүсийн худалдааны байгууллагуудыг хамтран ажиллахыг урьж байна.</p></div>
+  <div class="btns"><button class="btn btn-orange" type="button" id="dealerCta">Дилерийн хүсэлт <svg class="icon"><use href="#i-arrow"></use></svg></button></div>
  </div>
 </div></section>
 
@@ -288,6 +297,29 @@ dialog{width:min(640px,calc(100vw - 30px));max-height:90vh;overflow:auto;border:
  <div class="map-col"><div class="contact-map" id="contactMap"><div class="map-fallback"><svg class="icon"><use href="#i-pin"></use></svg><span>Хантайшир Эко Блок<br>Тайшир сум, Говь-Алтай</span></div></div><a class="btn btn-outline" target="_blank" rel="noopener" id="mapLink" href="https://www.google.com/maps/search/?api=1&amp;query=%D0%A2%D0%B0%D0%B9%D1%88%D0%B8%D1%80%20%D1%81%D1%83%D0%BC%2C%20%D0%93%D0%BE%D0%B2%D1%8C-%D0%90%D0%BB%D1%82%D0%B0%D0%B9">Google Maps-д нээх <svg class="icon"><use href="#i-arrow"></use></svg></a></div>
 </div></section>
 </main>
+
+<dialog id="dealerDialog" class="dealer-dialog" aria-labelledby="dealerDialogTitle">
+ <div class="modal-head"><h3 id="dealerDialogTitle">Гэрээт борлуулагчийн хүсэлт</h3><button type="button" class="modal-close" id="dealerClose" aria-label="Хаах">×</button></div>
+ <div class="modal-body">
+  <p class="dealer-note">Хамтын ажиллагааны мэдээллээ үлдээнэ үү. Энэ хүсэлт нь бүтээгдэхүүний үнийн саналаас тусдаа бүртгэгдэнэ.</p>
+  <p id="dealerStatus" class="modal-status warn" role="status" aria-live="polite">Дилерийн бүртгэлийн шинэчлэл идэвхжээгүй байна. Хүсэлтээ хуулж, борлуулалтын багт илгээнэ үү.</p>
+  <form id="dealerForm">
+   <div class="quote-fields">
+    <div class="input-wrap"><label for="dealerOrganization">Байгууллага / дэлгүүр *</label><input id="dealerOrganization" class="form-control" required maxlength="120" autocomplete="organization" placeholder="Байгууллагын нэр"></div>
+    <div class="input-wrap"><label for="dealerName">Холбоо барих хүн *</label><input id="dealerName" class="form-control" required maxlength="120" autocomplete="name" placeholder="Таны нэр"></div>
+    <div class="input-wrap"><label for="dealerPhone">Утас *</label><input id="dealerPhone" class="form-control" type="tel" required inputmode="tel" autocomplete="tel" pattern="(\+?976( |-)?)?[0-9]{4}( |-)?[0-9]{4}" title="8 оронтой утасны дугаар" placeholder="8600 0254"></div>
+    <div class="input-wrap"><label for="dealerLocation">Аймаг / хот *</label><input id="dealerLocation" class="form-control" required maxlength="120" placeholder="Ховд, Жаргалант"></div>
+    <div class="input-wrap"><label for="dealerEmail">Имэйл</label><input id="dealerEmail" class="form-control" type="email" autocomplete="email" maxlength="160" placeholder="name@example.com"></div>
+    <div class="input-wrap"><label for="dealerExperience">Үйл ажиллагааны чиглэл</label><select id="dealerExperience" class="form-control"><option value="">Сонгох</option><option value="Барилгын материалын худалдаа">Барилгын материалын худалдаа</option><option value="Барилга угсралт">Барилга угсралт</option><option value="Бусад">Бусад</option></select></div>
+    <div class="input-wrap span2"><label for="dealerNotes">Нэмэлт мэдээлэл</label><textarea id="dealerNotes" class="form-control" rows="2" maxlength="700" placeholder="Дэлгүүр, агуулах, хамтын ажиллагааны санал..."></textarea></div>
+   </div>
+   <div class="quote-privacy"><label for="dealerConsent"><input id="dealerConsent" type="checkbox" required> Мэдээллээ дилерийн хамтын ажиллагааны хүсэлтийг боловсруулах зорилгоор илгээхийг зөвшөөрч байна.</label></div>
+   <div class="quote-bottom"><span class="dealer-note">* Заавал бөглөх</span><button type="submit" class="btn btn-primary" id="dealerSubmit"><span id="dealerSubmitLabel">Хүсэлт хуулах</span><svg class="icon" aria-hidden="true"><use href="#i-arrow"></use></svg></button></div>
+   <textarea id="dealerCopyText" class="form-control dealer-copy-text" rows="5" readonly hidden aria-label="Дилерийн хүсэлтийн текст"></textarea>
+  </form>
+  <p class="dealer-note" style="margin-top:13px">Борлуулалтын алба: <a href="tel:+97686000254" style="font-weight:800;color:var(--deep);text-decoration:underline">8600 0254</a></p>
+ </div>
+</dialog>
 
 <footer class="footer"><div class="container footer-inner">
  <div class="footer-brand"><span class="footer-mark"></span><span>Хантайшир Эко Блок<small>Тайшир үйлдвэрлэл, технологийн парк</small></span></div>
@@ -342,6 +374,7 @@ const SITE={
   // Google Sheets > Extensions > Apps Script > Deploy > Web app дээрээс авсан /exec URL.
   // Дурын Google Sheets URL-ийг энд оруулахгүй: зөвхөн Apps Script Web App URL ажиллана.
   sheetWebhook:'https://script.google.com/macros/s/AKfycbx_-4eLoJOuHi29e143vhvkNP5JzsQ1GL8DxrAPhbpe52g2GG3xOejHcq2i07SdbmsDZQ/exec',
+  dealerBackendReady:false, // true болгохын өмнө Apps Script-ийн шинэ хувилбарыг deploy хийнэ.
   // Google Sheets-ээс өөр Formspree холболт ашиглах шаардлагатай бол:
   formEndpoint:'',
   mapQuery:'Тайшир сум, Говь-Алтай',
