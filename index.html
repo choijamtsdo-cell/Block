@@ -335,8 +335,10 @@ const SITE={
   email:'',                       // жишээ: 'sales@ДОМЭЙН.mn' — имэйл товч, хэвлэх хуудсанд гарна
   hours:'',                       // жишээ: 'Даваа–Баасан 09:00–18:00'
   facebook:'',                    // жишээ: 'https://facebook.com/...'
-  // Хүсэлтийг шууд хүлээн авах хаяг. Formspree (formspree.io) дээр үнэгүй маягт үүсгээд
-  // 'https://formspree.io/f/XXXXXXX' хаягийг энд тавина. Хоосон бол имэйл/утсаар дамжуулна.
+  // Google Sheets > Extensions > Apps Script > Deploy > Web app дээрээс авсан /exec URL.
+  // Дурын Google Sheets URL-ийг энд оруулахгүй: зөвхөн Apps Script Web App URL ажиллана.
+  sheetWebhook:'',
+  // Google Sheets-ээс өөр Formspree холболт ашиглах шаардлагатай бол:
   formEndpoint:'',
   mapQuery:'Тайшир сум, Говь-Алтай',
   // Техникийн үзүүлэлт: value хоосон бол харагдахгүй. Лабораторийн дүнгээр баталгаажуулж бөглөнө.
@@ -362,7 +364,7 @@ const $=id=>document.getElementById(id),$$=sel=>[...document.querySelectorAll(se
 const fmt=(n,d=2)=>Number(n).toLocaleString('en-US',{maximumFractionDigits:d});
 const mnt=n=>`${Math.round(n).toLocaleString('en-US')}₮`;
 const blockVol=t=>BLOCK_L*BLOCK_H*t/1000;
-let quote=null,calc=null,toastTimer,quoteBreakdown=null;
+let quote=null,calc=null,toastTimer,quoteBreakdown=null,activeLeadId=null;
 function notify(msg){$('toast').textContent=msg;$('toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('toast').classList.remove('show'),3400)}
 
 /* --- Тохиргоог хуудсанд буулгах --- */
@@ -375,7 +377,7 @@ $('mapLink').href='https://www.google.com/maps/search/?api=1&query='+encodeURICo
 $('printContact').textContent=['Хантайшир Эко Блок',...SITE.phones,SITE.email].filter(Boolean).join(' · ');
 $('sizeTable').replaceChildren(...SIZES.map(t=>{const tr=document.createElement('tr');tr.dataset.row=t;const v=blockVol(t);tr.innerHTML=`<th scope="row">600 × 240 × ${t}</th><td>${fmt(v,4)} м³</td><td>≈ ${fmt(1/v,1)} ш</td><td>${mnt(v*SITE.priceM3)}</td>`;return tr}));
 // Хүсэлтийг автоматаар хүлээн авах тохиргоо хийсний дараа идэвхжинэ.
-if(SITE.formEndpoint){
+if(SITE.sheetWebhook||SITE.formEndpoint){
  $('quoteSubmitLabel').textContent='Хүсэлт илгээх';
  $('quoteDeliveryNote').textContent='Мэдээллээ илгээсний дараа борлуулалтын баг холбогдож захиалгын нөхцөлийг баталгаажуулна.';
  $('privacyRow').hidden=false;$('privacyConsent').required=true;
@@ -434,6 +436,63 @@ $('clientVolume').addEventListener('input',clearQuoteBreakdown);
 $('clientProduct').addEventListener('change',clearQuoteBreakdown);
 $('dealerCta').addEventListener('click',()=>{if(!$('clientNotes').value)$('clientNotes').value='Дилер болох сонирхолтой байна.'});
 
+/* --- Google Sheets Apps Script: CORS preflight-гүй HTML form POST + буцах ACK --- */
+function makeLeadId(){
+ if(window.crypto&&crypto.randomUUID)return crypto.randomUUID();
+ const a=new Uint8Array(18);crypto.getRandomValues(a);
+ return Array.from(a,x=>x.toString(16).padStart(2,'0')).join('');
+}
+function sendGoogleSheetLead(q){
+ return new Promise((resolve,reject)=>{
+  const endpoint=SITE.sheetWebhook;
+  if(!/^https:\/\/script\.google\.com\/macros\/s\/[a-zA-Z0-9_-]+\/exec(?:\?[^#]*)?$/.test(endpoint)){
+   reject(Error('Google Apps Script Web App /exec URL буруу байна.'));return;
+  }
+  const target='lead_frame_'+q.requestId.replace(/[^a-zA-Z0-9]/g,'');
+  const iframe=document.createElement('iframe');
+  iframe.name=target;iframe.title='Үнийн хүсэлт бүртгэх';
+  iframe.setAttribute('aria-hidden','true');iframe.tabIndex=-1;
+  iframe.style.cssText='position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;border:0';
+  const form=document.createElement('form');
+  form.method='POST';form.action=endpoint;form.target=target;
+  form.enctype='application/x-www-form-urlencoded';form.acceptCharset='UTF-8';
+  form.style.display='none';
+  const input=document.createElement('input');input.type='hidden';input.name='payload';
+  const params=new URLSearchParams(location.search);
+  const utm=new URLSearchParams();
+  ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{if(params.has(k))utm.set(k,params.get(k).slice(0,120))});
+  input.value=JSON.stringify({
+   ...q,source:location.origin+location.pathname,
+   utm:utm.toString(),website:'',consent:$('privacyConsent').checked
+  });
+  form.append(input);
+  let done=false;
+  const cleanup=()=>{
+   window.removeEventListener('message',onMessage);
+   clearTimeout(timer);form.remove();
+   iframe.remove();
+  };
+  const finish=(ok,reason)=>{
+   if(done)return;
+   done=true;cleanup();
+   if(ok)resolve(true);else reject(Error(reason||'Google Sheets-ээс баталгаажуулалт ирээгүй.'));
+  };
+  const onMessage=e=>{
+   const d=e.data;
+   if(!d||d.type!=='KHANTAISHIR_LEAD_ACK'||d.requestId!==q.requestId)return;
+   // Google Apps Script HTML Service-ийн sandbox frame нь googleusercontent.com эсвэл null origin-той байж болно.
+   const trusted=e.origin==='null'||e.origin==='https://script.google.com'||/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(e.origin);
+   if(!trusted)return;
+   finish(d.ok===true,d.message||'Google Sheets рүү бүртгэхэд алдаа гарлаа.');
+  };
+  const timer=setTimeout(()=>finish(false,'Google Sheets-ээс хариу ирсэнгүй. Давтан илгээхээс өмнө бүртгэлээ шалгана уу.'),25000);
+  window.addEventListener('message',onMessage);
+  document.body.append(iframe,form);
+  try{form.submit()}catch(err){finish(false,'Хүсэлт илгээж чадсангүй.')}
+ });
+}
+$('quoteForm').addEventListener('input',()=>{activeLeadId=null});
+
 /* --- Үнийн хүсэлт --- */
 function qRows(q){return [['Огноо',q.date],['Нэр / байгууллага',q.name],['Утас',q.phone],['Төслийн байршил',q.location],['Блокийн хэмжээ',q.product],...(q.breakdown?[['Блокийн задаргаа',q.breakdown]]:[]),['Хэмжээ',`${fmt(q.volume,4)} м³ (≈ ${fmt(q.pieces,0)} ш)`],['Нэгж үнэ',`${mnt(SITE.priceM3)} / м³`],...(q.email?[['Имэйл',q.email]]:[]),...(q.notes?[['Тайлбар',q.notes]]:[])]}
 function fillTable(id,q){$(id).replaceChildren(...qRows(q).map(([k,v])=>{const tr=document.createElement('tr'),th=document.createElement('th'),td=document.createElement('td');th.textContent=k;td.textContent=v;tr.append(th,td);return tr}))}
@@ -459,12 +518,25 @@ $('quoteForm').addEventListener('submit',async e=>{
  const mixed=selected==='mixed'&&quoteBreakdown&&Math.abs(quoteBreakdown.volume-volume)<.0001;
  if(selected==='mixed'&&!mixed){notify('Тооцоолуураас хэмжээг дахин оруулна уу');return}
  const t=mixed?quoteBreakdown.t:Number(selected);
- quote={name:$('clientName').value.trim(),phone:$('clientPhone').value.trim(),location:$('clientLocation').value.trim(),volume,pieces:mixed?quoteBreakdown.pieces:Math.ceil(volume/blockVol(t)-1e-9),email:$('clientEmail').value.trim(),notes:$('clientNotes').value.trim(),product:mixed?'Гадна '+t+' мм + дотор 200 мм':$('clientProduct').selectedOptions[0].textContent,breakdown:mixed?quoteBreakdown.summary:'',total:Math.round(volume*SITE.priceM3),date:new Date().toLocaleDateString('mn-MN')};
- let sent=false;
- if(SITE.formEndpoint){const btn=$('quoteSubmit');btn.disabled=true;
-  try{const r=await fetch(SITE.formEndpoint,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({...quote,total:mnt(quote.total),_subject:'Үнийн хүсэлт — '+quote.name})});sent=r.ok}catch(err){sent=false}
-  btn.disabled=false;if(sent){f.reset();quoteBreakdown=null;$('mixedProductOption').hidden=true;$('quoteMixHint').hidden=true}else notify('Илгээхэд алдаа гарлаа. Утсаар холбогдоно уу.')}
- showDialog(quote,sent)});
+ quote={name:$('clientName').value.trim(),phone:$('clientPhone').value.trim(),location:$('clientLocation').value.trim(),volume,pieces:mixed?quoteBreakdown.pieces:Math.ceil(volume/blockVol(t)-1e-9),email:$('clientEmail').value.trim(),notes:$('clientNotes').value.trim(),product:mixed?'Гадна '+t+' мм + дотор 200 мм':$('clientProduct').selectedOptions[0].textContent,breakdown:mixed?quoteBreakdown.summary:'',total:Math.round(volume*SITE.priceM3),date:new Date().toLocaleDateString('mn-MN'),requestId:activeLeadId||(activeLeadId=makeLeadId())};
+ let sent=false,sendError='';
+ if(SITE.sheetWebhook||SITE.formEndpoint){
+  const btn=$('quoteSubmit'),label=$('quoteSubmitLabel'),prev=label.textContent;
+  btn.disabled=true;label.textContent='Илгээж байна...';
+  try{
+   if(SITE.sheetWebhook)sent=await sendGoogleSheetLead(quote);
+   else{
+    const r=await fetch(SITE.formEndpoint,{method:'POST',headers:{'Content-Type':'application/json',Accept:'application/json'},body:JSON.stringify({...quote,total:mnt(quote.total),_subject:'Үнийн хүсэлт — '+quote.name})});
+    sent=r.ok;
+   }
+  }catch(err){sendError=err.message||'Илгээхэд алдаа гарлаа.'}
+  btn.disabled=false;label.textContent=prev;
+  if(sent){f.reset();activeLeadId=null;quoteBreakdown=null;$('mixedProductOption').hidden=true;$('quoteMixHint').hidden=true}
+  else notify(sendError||'Хүсэлт бүртгэсэн эсэхийг баталгаажуулж чадсангүй.');
+ }
+ showDialog(quote,sent);
+ if(!sent&&sendError)$('dialogStatus').textContent=sendError+' Хүсэлтээ хуулж аваад борлуулалтын багтай холбогдох боломжтой.';
+});
 $('dialogClose').addEventListener('click',()=>$('quoteDialog').close());
 $('quoteDialog').addEventListener('click',e=>{if(e.target===$('quoteDialog'))$('quoteDialog').close()});
 $('printQuote').addEventListener('click',()=>{$('quoteDialog').close();window.print()});
