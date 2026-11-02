@@ -469,7 +469,7 @@ $('toQuote').addEventListener('click',()=>{
 function clearQuoteBreakdown(){if(!quoteBreakdown)return;quoteBreakdown=null;$('mixedProductOption').hidden=true;if($('clientProduct').value==='mixed')$('clientProduct').value='300';$('quoteMixHint').hidden=true}
 $('clientVolume').addEventListener('input',clearQuoteBreakdown);
 $('clientProduct').addEventListener('change',clearQuoteBreakdown);
-$('dealerCta').addEventListener('click',()=>{if(!$('clientNotes').value)$('clientNotes').value='Дилер болох сонирхолтой байна.'});
+// Дилерийн хүсэлтийг бүтээгдэхүүний үнийн саналын маягтаас бүрэн тусгаарласан.
 
 /* --- Google Sheets Apps Script: CORS preflight-гүй HTML form POST + буцах ACK --- */
 function makeLeadId(){
@@ -498,7 +498,7 @@ function sendGoogleSheetLead(q){
   ['utm_source','utm_medium','utm_campaign','utm_content','utm_term'].forEach(k=>{if(params.has(k))utm.set(k,params.get(k).slice(0,120))});
   input.value=JSON.stringify({
    ...q,source:location.origin+location.pathname,
-   utm:utm.toString(),website:'',consent:$('privacyConsent').checked
+   utm:utm.toString(),website:'',consent:q.formType==='dealer'?$('dealerConsent').checked:$('privacyConsent').checked
   });
   form.append(input);
   let done=false;
@@ -527,6 +527,85 @@ function sendGoogleSheetLead(q){
  });
 }
 $('quoteForm').addEventListener('input',()=>{activeLeadId=null});
+
+/* --- Гэрээт борлуулагчийн тусдаа хүсэлт --- */
+const dealerDialog=$('dealerDialog'),dealerForm=$('dealerForm'),dealerStatus=$('dealerStatus');
+let dealerLeadId=null;
+const dealerReady=Boolean(SITE.dealerBackendReady&&SITE.sheetWebhook);
+if(dealerReady){
+ $('dealerSubmitLabel').textContent='Хүсэлт илгээх';
+ dealerStatus.textContent='Хүсэлт Google Sheets-ийн “Гэрээт борлуулагчийн хүсэлт” табд тусдаа бүртгэгдэнэ.';
+ dealerStatus.className='modal-status ok';
+}
+$('dealerCta').addEventListener('click',()=>{
+ dealerDialog.showModal();
+ $('dealerOrganization').focus({preventScroll:true});
+});
+$('dealerClose').addEventListener('click',()=>dealerDialog.close());
+dealerDialog.addEventListener('click',e=>{
+ if(e.target!==dealerDialog)return;
+ const r=dealerDialog.getBoundingClientRect();
+ if(e.clientX<r.left||e.clientX>r.right||e.clientY<r.top||e.clientY>r.bottom)dealerDialog.close();
+});
+dealerForm.addEventListener('input',()=>{
+ dealerLeadId=null;
+ $('dealerCopyText').hidden=true;
+});
+function dealerRequestText(q){
+ return ['ХАНТАЙШИР ЭКО БЛОК — ГЭРЭЭТ БОРЛУУЛАГЧИЙН ХҮСЭЛТ',
+  'Байгууллага: '+q.organization,'Холбоо барих: '+q.name,
+  'Утас: '+q.phone,'Аймаг/хот: '+q.location,
+  ...(q.email?['Имэйл: '+q.email]:[]),
+  ...(q.experience?['Үйл ажиллагаа: '+q.experience]:[]),
+  ...(q.notes?['Нэмэлт мэдээлэл: '+q.notes]:[])
+ ].join('\n');
+}
+async function copyDealerDetails(q){
+ const message=dealerRequestText(q);
+ try{
+  if(!navigator.clipboard||!window.isSecureContext)throw Error('clipboard_unavailable');
+  await navigator.clipboard.writeText(message);
+  dealerStatus.textContent='Хүсэлтийг хууллаа. Автоматаар бүртгээгүй тул борлуулалтын багт илгээнэ үү.';
+  dealerStatus.className='modal-status warn';
+ }catch(e){
+  const text=$('dealerCopyText');
+  text.hidden=false;text.value=message;text.focus();text.select();
+  dealerStatus.textContent='Автомат бүртгэл идэвхжээгүй. Доорх текстийг хуулж, борлуулалтын багт илгээнэ үү.';
+  dealerStatus.className='modal-status warn';
+ }
+}
+dealerForm.addEventListener('submit',async e=>{
+ e.preventDefault();
+ if(!dealerForm.reportValidity())return;
+ const q={
+  formType:'dealer',requestId:dealerLeadId||(dealerLeadId=makeLeadId()),
+  organization:$('dealerOrganization').value.trim(),
+  name:$('dealerName').value.trim(),
+  phone:$('dealerPhone').value.trim(),
+  location:$('dealerLocation').value.trim(),
+  email:$('dealerEmail').value.trim(),
+  experience:$('dealerExperience').value,
+  notes:$('dealerNotes').value.trim()
+ };
+ if(!dealerReady){await copyDealerDetails(q);return}
+ const button=$('dealerSubmit'),label=$('dealerSubmitLabel');
+ button.disabled=true;label.textContent='Илгээж байна...';
+ try{
+  const saved=await sendGoogleSheetLead(q);
+  if(saved){
+   dealerStatus.textContent='Дилерийн хүсэлт амжилттай бүртгэгдлээ. Борлуулалтын баг холбогдоно.';
+   dealerStatus.className='modal-status ok';
+   dealerForm.reset();dealerLeadId=null;
+   $('dealerCopyText').hidden=true;
+  }
+ }catch(err){
+  dealerStatus.textContent='Автомат бүртгэл баталгаажаагүй: '+(err.message||'Алдаа гарлаа')+' Дахин илгээхээс өмнө Google Sheets-ийг шалгана уу.';
+  dealerStatus.className='modal-status warn';
+  // Do not change request ID on retry, so the new backend can prevent duplicates.
+ }finally{
+  button.disabled=false;label.textContent='Хүсэлт илгээх';
+ }
+});
 
 /* --- Үнийн хүсэлт --- */
 function qRows(q){return [['Огноо',q.date],['Нэр / байгууллага',q.name],['Утас',q.phone],['Төслийн байршил',q.location],['Блокийн хэмжээ',q.product],...(q.breakdown?[['Блокийн задаргаа',q.breakdown]]:[]),['Хэмжээ',`${fmt(q.volume,4)} м³ (≈ ${fmt(q.pieces,0)} ш)`],['Нэгж үнэ',`${mnt(SITE.priceM3)} / м³`],...(q.email?[['Имэйл',q.email]]:[]),...(q.notes?[['Тайлбар',q.notes]]:[])]}
