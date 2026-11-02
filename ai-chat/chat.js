@@ -36,7 +36,7 @@
   const field=build('textarea','',form);
   field.placeholder='Блокийн талаар асуугаарай...';
   field.rows=1;field.maxLength=500;field.required=true;
-  field.setAttribute('aria-label','AI зөвлөхөөс асуух');
+  field.setAttribute('aria-label','AI туслахаас асуух');
   const send=build('button','kh-ai-send',form,'Илгээх');
   send.type='submit';
   const foot=build('div','kh-ai-foot',panel);
