@@ -1,0 +1,26 @@
+/* Khantaishir AI sales assistant: isolated from the primary site styles. */
+.kh-ai-launcher{position:fixed;right:24px;bottom:24px;z-index:120;display:flex;align-items:center;gap:10px;border:0;border-radius:999px;padding:13px 18px;background:#0c4d38;color:white;box-shadow:0 12px 40px #052d2070;font:800 14px Manrope,Arial,sans-serif;cursor:pointer}
+.kh-ai-launcher:hover{background:#086b4a;transform:translateY(-2px)}
+.kh-ai-dot{display:inline-grid;place-items:center;width:25px;height:25px;border-radius:50%;background:#35b34a;font-weight:800;font-size:12px}
+.kh-ai-panel{position:fixed;right:24px;bottom:87px;z-index:120;width:min(388px,calc(100vw - 26px));height:min(568px,calc(100dvh - 112px));display:flex;flex-direction:column;background:#fff;border:1px solid #dde7e0;border-radius:18px;box-shadow:0 22px 70px #0a2e2440;overflow:hidden;font:14px/1.5 Manrope,'Segoe UI',Arial,sans-serif;color:#182722}
+.kh-ai-panel[hidden]{display:none!important}
+.kh-ai-head{background:#0c4d38;color:#fff;display:flex;align-items:center;justify-content:space-between;padding:15px 16px;gap:12px}
+.kh-ai-head strong{display:block;font-size:16px}.kh-ai-head small{display:block;color:#d6f1db;font-size:11px}
+.kh-ai-close{width:34px;height:34px;display:grid;place-items:center;border:1px solid #ffffff44;color:#fff;background:transparent;border-radius:10px;font-size:25px;cursor:pointer}
+.kh-ai-messages{flex:1;overflow-y:auto;padding:15px;background:#f6faf7;display:flex;flex-direction:column;gap:12px;overscroll-behavior:contain}
+.kh-ai-bubble{max-width:92%;border-radius:14px;padding:11px 13px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px;line-height:1.6}
+.kh-ai-bubble.bot{background:white;border:1px solid #e0eae3;align-self:flex-start;border-top-left-radius:4px}
+.kh-ai-bubble.user{background:#0c4d38;color:white;align-self:flex-end;border-top-right-radius:4px}
+.kh-ai-bubble.pending{color:#53665a;font-style:italic}
+.kh-ai-chips{display:flex;gap:7px;flex-wrap:wrap;padding:9px 13px;border-top:1px solid #e8efea;background:white}
+.kh-ai-chips button{font:700 12px Manrope,Arial,sans-serif;border-radius:999px;border:1px solid #c9dfcd;background:#edf7ee;color:#0c4d38;padding:7px 10px;cursor:pointer}
+.kh-ai-chips button:hover{background:#daf0dd}.kh-ai-chips button:disabled{opacity:.5;cursor:not-allowed}
+.kh-ai-form{display:flex;gap:8px;align-items:flex-end;padding:12px;border-top:1px solid #e3ebe5;background:white}
+.kh-ai-form textarea{flex:1;min-width:0;resize:none;max-height:92px;min-height:43px;padding:10px 11px;border:1px solid #d4e0d7;border-radius:10px;outline-color:#35b34a;font:13px/1.5 inherit}
+.kh-ai-send{min-width:52px;min-height:43px;padding:9px 10px;border:0;border-radius:10px;background:#0c4d38;color:#fff;font:700 12px Manrope,Arial,sans-serif;cursor:pointer}
+.kh-ai-send:disabled{opacity:.5;cursor:not-allowed}
+.kh-ai-foot{display:flex;justify-content:space-between;align-items:center;gap:9px;padding:7px 13px;border-top:1px solid #e8efea;font-size:11px;color:#617063;background:#fff}
+.kh-ai-foot a{color:#0c4d38;font-weight:800;text-decoration:underline}
+@media(max-width:600px){.kh-ai-launcher{bottom:16px;right:15px;padding:13px}.kh-ai-launcher .kh-ai-launch-text{display:none}.kh-ai-panel{right:8px;bottom:76px;width:calc(100vw - 16px);height:min(620px,calc(100dvh - 92px));border-radius:15px}.kh-ai-bubble{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.kh-ai-launcher:hover{transform:none}}
+@media print{.kh-ai-launcher,.kh-ai-panel{display:none!important}}
