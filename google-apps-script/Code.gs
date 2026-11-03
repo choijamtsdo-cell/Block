@@ -428,3 +428,17 @@ function khQuoteHtml_(q,r){
   var row=function(a,b){return '<tr><td>'+e(a)+'</td><td class="amount">'+e(b)+' ₮</td></tr>';};
   return '<!doctype html><html lang="mn"><head><meta charset="utf-8"><style>@page{size:A4;margin:18mm}body{font:12px Arial,sans-serif;color:#163c30;line-height:1.55}h1{font-size:26px;margin:0}h2{font-size:21px}header{border-bottom:3px solid #198754;padding-bottom:18px}.muted{color:#66756d}.badge{font-weight:bold;color:#198754}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{border-bottom:1px solid #dbe5df;padding:10px;text-align:left}.amount{text-align:right;white-space:nowrap}.total td{background:#e8f5eb;font-size:17px;font-weight:bold}.terms{white-space:pre-wrap;overflow-wrap:break-word}footer{border-top:1px solid #dbe5df;margin-top:26px;padding-top:12px;font-size:10px}</style></head><body><header><p class="badge">ХАНТАЙШИР ЭКО БЛОК</p><h1>ҮНИЙН САНАЛ</h1><p>'+e(r?r.number:'УРЬДЧИЛСАН — БАТАЛГААЖААГҮЙ')+'</p></header><p>Огноо: '+date(approved)+' · Хүчинтэй: '+date(until)+' хүртэл</p><h2>'+e(q.name)+'</h2><p>'+e(q.phone)+' · '+e(q.email)+'<br>'+e(q.location)+'</p><p><strong>Бүтээгдэхүүн:</strong> '+e(q.product)+'</p><table><tr><th>Үзүүлэлт</th><th class="amount">Дүн</th></tr><tr><td>Тоо хэмжээ</td><td class="amount">'+e(q.volume)+' м³ / '+e(q.pieces)+' ш</td></tr>'+row('Нэг м³ үнэ',khMoney_(q.unitPrice))+row('Бүтээгдэхүүний үнэ',khMoney_(q.subtotal))+row('Хөнгөлөлт',khMoney_(q.discount))+row('Бүтээгдэхүүний төлөх дүн',khMoney_(q.goodsTotal))+row('Подоны буцаан олгох барьцаа ('+q.pallets+' × '+khMoney_(q.depositEach)+' ₮)',khMoney_(q.depositTotal))+'<tr class="total"><td>Нийт төлөх дүн</td><td class="amount">'+khMoney_(q.total)+' ₮</td></tr></table><p><strong>НӨАТ:</strong> '+e(q.tax)+'</p><p class="terms"><strong>Нөхцөл:</strong> '+e(q.terms)+'</p><footer>Хүсэлтийн дугаар: '+e(q.requestId)+'<br>'+(r?'Борлуулалтын баталгаажуулалт: '+e(r.approvedBy)+' · '+date(approved):'Энэ бол урьдчилсан харагдац. Албан санал биш.')+'</footer></body></html>';
 }
+
+/** Internal smoke test: creates a clearly labelled PDF, never sends email. */
+function testSalesPdfNoEmail() {
+  var actor=khAuthorize_();
+  var values=['KH-TEST-000000000001','ТУРШИЛТ — ХАРИЛЦАГЧ БИШ','00000000','test@example.com','Туршилтын байршил','100 × 240 × 600 мм',10,694,300000,100000,7,25000,'НӨАТ нийт үнэд багтсан — туршилтын дүн',7,'ТУРШИЛТ. Төлбөрийн болон худалдааны баримт биш. Имэйл илгээгээгүй.','ТИЙМ'];
+  var q=khReadQuote_(values);
+  if(q.total!==3075000)throw new Error('Calculation self-test failed');
+  var record={number:'ТУРШИЛТ — АЛБАН САНАЛ БИШ',approvedAt:new Date().toISOString(),approvedBy:actor};
+  var pdf=HtmlService.createHtmlOutput(khQuoteHtml_(q,record)).getAs(MimeType.PDF).setName('TEST-QUOTE-NOT-FOR-SALE.pdf');
+  if(pdf.getBytes().length<1000)throw new Error('PDF conversion returned an empty file');
+  var folderId=PropertiesService.getScriptProperties().getProperty('KH_QUOTE_FOLDER');
+  var file=DriveApp.getFolderById(folderId).createFile(pdf);
+  Logger.log('PDF_SELF_TEST_OK '+file.getUrl()+' bytes='+pdf.getBytes().length+' mailQuota='+MailApp.getRemainingDailyQuota()+'; NO_EMAIL_SENT');
+}
