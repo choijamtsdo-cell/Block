@@ -23,3 +23,11 @@ values[0]='KH-20261103-112233445566';failure='mail';assert.throws(()=>ctx.approv
 failure='';values[0]='KH-20261103-998877665544';failure='pdf';assert.throws(()=>ctx.approveAndEmailQuote(),/PDF/);values[9]=0;failure='';assert.throws(()=>ctx.approveAndEmailQuote(),/өөрчлөгдсөн/);assert.equal(mailCount,2);
 fs.writeFileSync(__dirname+'/preview.html',ctx.khQuoteHtml_(q,{number:'KH-Q-2026-000001',approvedAt:'2026-11-03T05:00:00Z',approvedBy:'sales@example.com'}));
 console.log('PASS: calculations, required review, recipient validation, unauthorized actor, changed confirmation, quota, PDF failure/retry, official numbering, immutable approval, no duplicate email, uncertain-send guard. No real mail or Google calls.');
+assert.equal(ctx.khPalletSuggestion_('100 × 240 × 600 мм',201),3);
+assert.equal(ctx.khPalletSuggestion_('600x240x100',200),2);
+assert.equal(ctx.khPalletSuggestion_('600 × 240 × 200 мм',200),null);
+assert.equal(ctx.khPalletSuggestion_('Гадна 100 мм: 2 м³ (100 ш); Дотор 200 мм: 1 м³ (40 ш)',140),null);
+assert.equal(ctx.khPalletSuggestion_('100 × 240 × 600 мм',100.5),null);
+actor='outsider@example.com';
+for(const name of ['salesDashboardData','salesDashboardLoad','salesDashboardSave','salesDashboardSend'])assert.throws(()=>ctx[name](),/эрх/);
+console.log('PASS: confirmed pallet packing, round-up, dimension order, unknown/mixed product exclusion, dashboard authorization.');
