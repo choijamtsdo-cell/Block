@@ -45,3 +45,12 @@ ctx.khPutRecord_(ctx.khReadQuote_(saved.values),{state:'APPROVED',snapshot:ctx.k
 assert.throws(()=>ctx.salesDashboardSave({id:updated[0],values:updated,token:saved.token}),/Баталсан/);
 assert.equal(mailCount,2);
 console.log('PASS: dashboard preview, save, concurrent-change rejection, stale approval rejection, immutable approved draft; no additional mail.');
+const legalQ=ctx.khReadQuote_(saved.values);const legalHtml=ctx.khQuoteHtml_(legalQ,null);
+assert.match(legalHtml,/Хантайшир эко блок ХХК/);assert.match(legalHtml,/РД:3267806/);assert.doesNotMatch(legalHtml,/Цэнгазар ХХК/);
+assert.match(legalHtml,/data:image\/png;base64/);assert.doesNotMatch(legalHtml,/600 ш|695 ш|Ширхэг/);
+const mixed={...legalQ,product:'Гадна 300 мм: 24.57 м³; Дотор 200 мм: 2.205 м³',volume:26.775,subtotal:8032500};
+let itemRows=ctx.khQuoteItems_(mixed);assert.equal(itemRows.length,2);assert.equal(itemRows[0].volume,24.57);assert.equal(itemRows[1].volume,2.205);assert.equal(itemRows.reduce((n,r)=>n+r.total,0),8032500);
+assert.equal(ctx.khQuoteItems_({...mixed,volume:27}).length,1);
+assert.equal(ctx.khQuoteItems_({...legalQ,product:'Гадна 300 мм: 24.57 м³ (569 ш); Дотор 200 мм: 2.205 м³ (77 ш)',volume:26.775,subtotal:8032500}).length,2);
+assert.match(ctx.khQuoteHtml_({...legalQ,name:'<script>alert(1)</script>'},null),/&lt;script&gt;/);
+console.log('PASS: fixed legal supplier, registration, embedded brand assets, cubic metre-only quote, mixed product split and exact row totals, HTML escaping.');
