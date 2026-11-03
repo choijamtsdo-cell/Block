@@ -251,6 +251,8 @@ const KH_SALES = Object.freeze({
 });
 function onOpen() {
   SpreadsheetApp.getUi().createMenu('Үнийн санал')
+    .addItem('Борлуулалтын самбар нээх', 'openSalesDashboard')
+    .addSeparator()
     .addItem('1. Анхны тохиргоо', 'setupSalesWorkflow')
     .addItem('2. Сонгосон хүсэлтээс санал бэлтгэх', 'prepareSalesQuote')
     .addItem('3. Урьдчилан харах', 'previewSalesQuote')
@@ -377,6 +379,10 @@ function approveAndEmailQuote() {
   var q=khReadQuote_(sel.sheet.getRange(sel.row,1,1,23).getValues()[0]);
   var hash=khHash_(q); var ui=SpreadsheetApp.getUi();
   if(ui.alert('Албан үнийн санал батлах',q.name+'\nИмэйл: '+q.email+'\nНийт: '+khMoney_(q.total)+' ₮\nҮүнээс подоны барьцаа: '+khMoney_(q.depositTotal)+' ₮\n\nБаталснаар PDF үүсэж энэ хаяг руу илгээгдэнэ. НӨАТ зэрэг төлөх бүх дүн нэгж үнэд туссан эсэхийг шалгасан уу?',ui.ButtonSet.YES_NO)!==ui.Button.YES)return;
+  khApproveAndSend_(sel,q,hash,actor);
+  ui.alert('Баталсан PDF саналыг '+q.email+' хаяг руу илгээлээ.');
+}
+function khApproveAndSend_(sel,q,hash,actor) {
   khLock_(function(){
     khAuthorize_();
     var fresh=khReadQuote_(sel.sheet.getRange(sel.row,1,1,23).getValues()[0]);
@@ -413,7 +419,6 @@ function approveAndEmailQuote() {
       r.error=cleanText_(err.message,500);khPutRecord_(q,r);khWriteStatus_(sel,r);throw err;
     }
   });
-  ui.alert('Баталсан PDF саналыг '+q.email+' хаяг руу илгээлээ.');
 }
 function khWriteStatus_(sel,r){
   sel.sheet.getRange(sel.row,17,1,7).setValues([[r.state,r.number,r.approvedBy,r.approvedAt,
@@ -442,3 +447,80 @@ function testSalesPdfNoEmail() {
   var file=DriveApp.getFolderById(folderId).createFile(pdf);
   Logger.log('PDF_SELF_TEST_OK '+file.getUrl()+' bytes='+pdf.getBytes().length+' mailQuota='+MailApp.getRemainingDailyQuota()+'; NO_EMAIL_SENT');
 }
+
+
+/** Sales dashboard is served only from the authenticated bound Sheet menu. */
+function openSalesDashboard(){
+  khAuthorize_();SpreadsheetApp.getUi().showModalDialog(
+    HtmlService.createHtmlOutput(khDashboardHtml_()).setWidth(1180).setHeight(800),'Борлуулалтын самбар');
+}
+function khDashboardId_(id){id=String(id||'');if(!/^[a-zA-Z0-9_-]{12,100}$/.test(id))throw new Error('Хүсэлтийн дугаар буруу.');return id;}
+function khDashboardRow_(id){
+  var sh=khSalesSheet_();var found=sh.getRange('A:A').createTextFinder(khDashboardId_(id)).matchEntireCell(true).findNext();
+  if(!found||found.getRow()<2)throw new Error('Санал олдсонгүй.');return {sheet:sh,row:found.getRow()};
+}
+function salesDashboardData(){
+  khAuthorize_();var sh=getTargetSheet_();var count=Math.min(200,Math.max(0,sh.getLastRow()-1));
+  var drafts=khSalesSheet_();var draftCount=Math.max(0,drafts.getLastRow()-1);var states={};
+  if(draftCount)drafts.getRange(2,1,draftCount,17).getValues().forEach(function(r){states[r[0]]=r[16]||'DRAFT';});
+  var values=count?sh.getRange(sh.getLastRow()-count+1,1,count,17).getValues():[];
+  return {rows:values.reverse().filter(function(r){return r[1]&&r[16]==='Тийм';}).map(function(r){
+    return {id:String(r[1]),name:String(r[3]),phone:String(r[4]),volume:r[8],state:states[r[1]]||'NEW'};
+  })};
+}
+function khPalletSuggestion_(product,pieces){
+  var dimensions=String(product).match(/\d+/g)||[];
+  dimensions=dimensions.map(Number).sort(function(a,b){return a-b;});
+  // Only confirmed packing data. Never extrapolate other SKUs or mixed loads.
+  if(dimensions.length===3&&dimensions.join(',')==='100,240,600'&&Number.isInteger(Number(pieces))&&Number(pieces)>0)
+    return Math.ceil(Number(pieces)/100);
+  return null;
+}
+function salesDashboardLoad(id){
+  khAuthorize_();id=khDashboardId_(id);
+  khLock_(function(){
+    var sh=khSalesSheet_();if(sh.getRange('A:A').createTextFinder(id).matchEntireCell(true).findNext())return;
+    var leads=getTargetSheet_();var found=leads.getRange('B:B').createTextFinder(id).matchEntireCell(true).findNext();
+    if(!found||found.getRow()<2)throw new Error('Хүсэлт олдсонгүй.');
+    var r=leads.getRange(found.getRow(),1,1,17).getValues()[0];
+    if(r[16]!=='Тийм')throw new Error('Мэдээлэл илгээх зөвшөөрөл байхгүй.');
+    var product=r[7]||r[6];var pallets=khPalletSuggestion_(product,r[9]);
+    sh.appendRow([id,r[3],r[4],r[12],r[5],product,r[8],r[9],KHANTAISHIR.priceM3,0,
+      pallets===null?'':pallets,'','',7,'Подоны барьцааг подон буцаалтын нөхцөлөөр тооцно.','','DRAFT','','','','','','']
+      .map(function(v){return typeof v==='string'?asCell_(v):v;}));
+  });
+  return khDashboardView_(khDashboardRow_(id));
+}
+function khDashboardView_(sel){
+  var values=sel.sheet.getRange(sel.row,1,1,23).getValues()[0].slice(0,16);
+  var record=khGetRecord_(String(values[0]));var state=record?record.state:'DRAFT';var valid=false,preview='';
+  // A stored approval snapshot is authoritative even when somebody edits cells later.
+  var same=true;if(record){try{same=khHash_(khReadQuote_(values))===record.hash;}catch(e){same=false;}}
+  try{var q=record?record.snapshot:khReadQuote_(values);preview=khQuoteHtml_(q,record);valid=same;}catch(e){}
+  return {values:values,token:khHash_(values),state:state,locked:!!record,valid:valid,preview:preview,
+    pdf:record&&record.fileId?'https://drive.google.com/file/d/'+record.fileId+'/view':'',
+    suggestion:khPalletSuggestion_(values[5],values[7])};
+}
+function salesDashboardSave(payload){
+  khAuthorize_();if(!payload||!Array.isArray(payload.values)||payload.values.length!==16)throw new Error('Саналын бүтэц буруу.');
+  var sel=khDashboardRow_(payload.id);
+  khLock_(function(){
+    var old=sel.sheet.getRange(sel.row,1,1,16).getValues()[0];
+    if(khHash_(old)!==payload.token)throw new Error('Өөр ажилтан мэдээллийг өөрчилсөн. Хүсэлтээ дахин нээнэ үү.');
+    if(khGetRecord_(payload.id))throw new Error('Баталсан санал засварлах боломжгүй.');
+    var v=payload.values.slice();v[0]=old[0];var q=khReadQuote_(v);
+    v=[q.requestId,q.name,q.phone,q.email,q.location,q.product,q.volume,q.pieces,q.unitPrice,q.discount,q.pallets,q.depositEach,q.tax,q.validDays,q.terms,'ТИЙМ'];
+    sel.sheet.getRange(sel.row,1,1,16).setValues([v.map(function(x){return typeof x==='string'?asCell_(x):x;})]);
+    sel.sheet.getRange(sel.row,17).setValue('DRAFT');SpreadsheetApp.flush();
+  });
+  return khDashboardView_(sel);
+}
+function salesDashboardSend(payload){
+  var actor=khAuthorize_();if(!payload)throw new Error('Хүсэлт дутуу.');var sel=khDashboardRow_(payload.id);
+  var values=sel.sheet.getRange(sel.row,1,1,16).getValues()[0];
+  if(khHash_(values)!==payload.token)throw new Error('Мэдээлэл өөрчлөгдсөн. Хүсэлтээ дахин нээж хянана уу.');
+  var q=khReadQuote_(values);khApproveAndSend_(sel,q,khHash_(q),actor);
+  return khDashboardView_(sel);
+}
+
+function khDashboardHtml_(){return "<!doctype html><html lang=\"mn\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>\n*{box-sizing:border-box}body{margin:0;background:#f3f6f3;color:#173b2f;font:14px Arial,sans-serif}button,input,textarea{font:inherit}button{cursor:pointer;border:1px solid #cbd9cf;border-radius:9px;padding:10px 14px;background:white;color:#173b2f}button:hover{background:#e8f2eb}button:disabled{opacity:.5;cursor:wait}.primary{background:#126a45;color:white;border-color:#126a45}.primary:hover{background:#0c5033}header{padding:22px 26px;background:white;border-bottom:1px solid #dce5dd;display:flex;justify-content:space-between;gap:20px;align-items:center}h1{font-size:23px;margin:5px 0}.brand{font-size:10px;letter-spacing:2px;color:#53806a;font-weight:bold}.sub{color:#708378;font-size:12px}.stats{display:flex;gap:20px}.stats b{font-size:23px;display:block}.stats span{font-size:11px;color:#708378}.layout{display:grid;grid-template-columns:300px 1fr;min-height:530px}aside{padding:20px;border-right:1px solid #dce5dd}.search{width:100%;margin-bottom:12px}input,textarea{border:1px solid #cedbd1;border-radius:8px;background:white;padding:10px;width:100%;color:#173b2f}input:focus,textarea:focus{outline:2px solid #6ba587;outline-offset:1px}.request{display:block;width:100%;text-align:left;padding:13px;margin:8px 0;background:white}.request.active{border-color:#167c51;box-shadow:0 0 0 1px #167c51}.request strong{display:block;margin:6px 0}.request small{display:block;color:#708378;font-size:11px}.pill{display:inline-block;font-size:10px;background:#e6f2e9;color:#176443;border-radius:20px;padding:4px 7px}.pending{background:#fff2d6;color:#88671f}.main{padding:22px 26px}.empty{text-align:center;padding:100px 20px;color:#738579}.topline{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.topline h2{font-size:20px;margin:6px 0}.grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0}label{font-size:11px;color:#5c7466;display:block}label input,label textarea{margin-top:6px;font-size:13px}.wide{grid-column:1/-1}.two{grid-column:span 2}.hint{font-size:11px;line-height:1.5;color:#718476;margin-top:6px}.calc{background:#eaf4ed;border:1px solid #d5e9dc;border-radius:10px;padding:15px;display:flex;justify-content:space-between;gap:15px}.calc strong{font-size:23px}.calc small{display:block;color:#637e6d;margin-bottom:5px}.check{display:flex;gap:9px;align-items:center;margin:16px 0;font-size:12px}.check input{width:17px;height:17px;margin:0}.actions{display:flex;gap:10px;flex-wrap:wrap;border-top:1px solid #dde7df;padding-top:16px}.notice{margin:0;padding:12px 26px;font-size:12px;line-height:1.6;background:#e7f1ea}.error{background:#ffeded;color:#a12c2c}.success{background:#e4f6ea;color:#19683d}.hidden{display:none!important}iframe{width:100%;height:450px;border:1px solid #dce5dd;border-radius:10px;background:white;margin-top:18px}.readonly{background:#eef2ef}a{color:#126a45}#status{min-height:42px}button.link{font-size:11px;padding:4px 8px;margin-top:5px}#results{max-height:610px;overflow:auto}#editor[aria-busy=true]{opacity:.65;pointer-events:none}@media(max-width:780px){.layout{grid-template-columns:1fr}.stats{display:none}aside{border-right:0;border-bottom:1px solid #ddd}#results{max-height:200px}.grid{grid-template-columns:1fr 1fr}.two{grid-column:1/-1}}\n</style></head><body><header><div><div class=\"brand\">ХАНТАЙШИР ЭКО БЛОК</div><h1>Борлуулалтын самбар</h1><div class=\"sub\">Хүсэлтээ хянаж, баталгаатай санал илгээнэ.</div></div><div class=\"stats\"><div><b id=\"countAll\">—</b><span>ХҮСЭЛТ</span></div><div><b id=\"countPending\">—</b><span>ХЯНАЛТАД</span></div><div><b id=\"countSent\">—</b><span>ИЛГЭЭСЭН</span></div></div><button id=\"refresh\">Шинэчлэх ↻</button></header><p id=\"status\" class=\"notice\" role=\"status\">Хүсэлтүүдийг ачаалж байна…</p><div class=\"layout\"><aside><input class=\"search\" id=\"search\" placeholder=\"Нэр, утас, хүсэлтийн дугаар\" aria-label=\"Хүсэлт хайх\"><div class=\"hint\">Сүүлийн 200 хүсэлт</div><div id=\"results\"></div></aside><main class=\"main\"><div id=\"empty\" class=\"empty\">Хянах хүсэлтээ зүүн талаас сонгоно уу.</div><section id=\"editor\" class=\"hidden\" aria-busy=\"false\"><div class=\"topline\"><div><div id=\"requestId\" class=\"sub\"></div><h2 id=\"customerTitle\"></h2></div><span id=\"state\" class=\"pill\"></span></div><form id=\"form\"><div class=\"grid\"><label>Харилцагч<input data-i=\"1\" required maxlength=\"120\"></label><label>Утас<input data-i=\"2\" required maxlength=\"24\"></label><label>Хүлээн авагчийн имэйл<input data-i=\"3\" type=\"email\" required maxlength=\"160\"></label><label class=\"wide\">Байршил<input data-i=\"4\" required maxlength=\"120\"></label><label class=\"wide\">Блокийн хэмжээ / задаргаа<textarea data-i=\"5\" rows=\"2\" required maxlength=\"1000\"></textarea></label><label>Тоо хэмжээ, м³<input data-i=\"6\" type=\"number\" min=\"0.1\" max=\"100000\" step=\"any\" required></label><label>Нийт ширхэг<input data-i=\"7\" type=\"number\" min=\"1\" max=\"10000000\" step=\"1\" required></label><label>Нэг м³ үнэ, ₮<input data-i=\"8\" type=\"number\" min=\"1\" step=\"1\" required></label><label>Хөнгөлөлт, ₮<input data-i=\"9\" type=\"number\" min=\"0\" step=\"1\" required></label><label>Подоны тоо<input data-i=\"10\" type=\"number\" min=\"0\" step=\"1\" required><div id=\"palletHint\" class=\"hint\"></div><button id=\"usePallet\" type=\"button\" class=\"link hidden\">Тооцоог хэрэглэх</button></label><label>Нэг подоны барьцаа, ₮<input data-i=\"11\" type=\"number\" min=\"0\" step=\"1\" required></label><label class=\"two\">НӨАТ-ын нөхцөл<input data-i=\"12\" required maxlength=\"200\" placeholder=\"Жишээ: НӨАТ нэгж үнэд багтсан\"><div class=\"hint\">Төлөх бүх татварыг нэгж үнэд тусгана. Энэ талбараас нэмэлт татвар тооцохгүй.</div></label><label>Хүчинтэй хоног<input data-i=\"13\" type=\"number\" min=\"1\" max=\"365\" step=\"1\" required></label><label class=\"wide\">Подон буцаах болон бусад нөхцөл<textarea data-i=\"14\" rows=\"2\" maxlength=\"1500\"></textarea></label></div><div class=\"calc\"><div><small>Бүтээгдэхүүн − хөнгөлөлт</small><b id=\"goods\">—</b></div><div><small>Подоны барьцаа</small><b id=\"deposit\">—</b></div><div><small>Нийт төлөх дүн</small><strong id=\"total\">—</strong></div></div><label class=\"check\"><input id=\"verified\" type=\"checkbox\" required>Имэйл хаяг, үнэ, подон болон НӨАТ-ын нөхцөлийг шалгасан.</label><div class=\"actions\"><button type=\"submit\" id=\"save\">Хадгалж урьдчилан харах</button><button type=\"button\" id=\"send\" class=\"primary\" disabled>Баталж PDF-ээр имэйлдэх →</button><a id=\"pdfLink\" class=\"hidden\" target=\"_blank\" rel=\"noopener\">Баталсан PDF нээх ↗</a></div></form><iframe id=\"preview\" class=\"hidden\" title=\"Үнийн саналын урьдчилсан харагдац\" sandbox></iframe></section></main></div><script>\nconst $=id=>document.getElementById(id),inputs=[...document.querySelectorAll('[data-i]')];let rows=[],current=null,dirty=false,suggestion=null,busy=false;\nconst labels={DRAFT:'Хяналтад',APPROVED:'Баталсан',SENT:'Илгээсэн',SENDING:'Илгээлтийг шалгах',UNKNOWN:'Илгээлтийг шалгах',NEW:'Шинэ'};\nfunction msg(text,kind=''){ $('status').textContent=text;$('status').className='notice '+kind; }\nfunction rpc(name,arg){return new Promise((resolve,reject)=>google.script.run.withSuccessHandler(resolve).withFailureHandler(e=>reject(new Error(e.message||'Алдаа гарлаа')))[name](arg));}\nfunction lock(on){busy=on;$('editor').setAttribute('aria-busy',String(on));$('refresh').disabled=on;}\nfunction money(n){return Number.isFinite(n)?Math.round(n).toLocaleString('en-US')+' ₮':'—';}\nfunction input(i){return inputs.find(x=>+x.dataset.i===i)}\nfunction showRows(){let query=$('search').value.trim().toLowerCase();$('results').replaceChildren();rows.filter(r=>[r.id,r.name,r.phone].join(' ').toLowerCase().includes(query)).forEach(r=>{let b=document.createElement('button');b.className='request'+(current?.values[0]===r.id?' active':'');let badge=document.createElement('span');badge.className='pill'+(r.state==='NEW'?' pending':'');badge.textContent=labels[r.state]||r.state;let title=document.createElement('strong');title.textContent=r.name;let id=document.createElement('small');id.textContent=r.id;let info=document.createElement('small');info.textContent=r.phone+' · '+r.volume+' м³';b.append(badge,title,id,info);b.onclick=()=>open(r.id);$('results').append(b);});if(!$('results').children.length)$('results').textContent='Тохирох хүсэлт алга.';}\nasync function refresh(){if(busy)return;lock(true);try{let data=await rpc('salesDashboardData',null);rows=data.rows;$('countAll').textContent=rows.length;$('countPending').textContent=rows.filter(r=>['NEW','DRAFT','APPROVED'].includes(r.state)).length;$('countSent').textContent=rows.filter(r=>r.state==='SENT').length;showRows();msg('Зөвхөн борлуулалтын баталсан саналыг хэрэглэгчид илгээнэ.');}catch(e){msg(e.message,'error')}finally{lock(false)}}\nasync function open(id){if(busy)return;if(dirty&&!confirm('Хадгалаагүй өөрчлөлтийг орхиод өөр хүсэлт нээх үү?'))return;lock(true);try{apply(await rpc('salesDashboardLoad',id));msg('Мэдээллийг шалгаад хадгалж урьдчилан харна уу.');}catch(e){msg(e.message,'error')}finally{lock(false)}}\nfunction apply(data){current=data;dirty=false;let item=rows.find(r=>r.id===data.values[0]);if(item){item.state=data.state;item.name=data.values[1]}$('countPending').textContent=rows.filter(r=>['NEW','DRAFT','APPROVED'].includes(r.state)).length;$('countSent').textContent=rows.filter(r=>r.state==='SENT').length;$('empty').classList.add('hidden');$('editor').classList.remove('hidden');$('requestId').textContent=data.values[0];$('customerTitle').textContent=data.values[1];$('state').textContent=labels[data.state]||data.state;inputs.forEach(el=>{el.value=data.values[+el.dataset.i]??'';el.disabled=data.locked});$('verified').checked=data.values[15]==='ТИЙМ';$('verified').disabled=data.locked;$('save').disabled=data.locked;$('send').disabled=(data.locked&&data.state!=='APPROVED')||!data.valid;$('preview').classList.toggle('hidden',!data.preview);$('preview').srcdoc=data.preview||'';$('pdfLink').classList.toggle('hidden',!data.pdf);if(data.pdf)$('pdfLink').href=data.pdf;showRows();calculate();}\nfunction calculate(){let n=i=>input(i).value===''?NaN:Number(input(i).value),goods=Math.round(n(6)*n(8))-n(9),deposit=n(10)*n(11);$('goods').textContent=money(goods);$('deposit').textContent=money(deposit);$('total').textContent=money(goods+deposit);let sizes=(input(5).value.match(/\\d+/g)||[]).map(Number).sort((a,b)=>a-b);suggestion=sizes.length===3&&sizes.join(',')==='100,240,600'&&Number.isInteger(n(7))&&n(7)>0?Math.ceil(n(7)/100):null;$('palletHint').textContent=suggestion!==null?'100 ш / подон → '+suggestion+' подон. Сүүлийн дутуу подоныг бүтнээр тооцов.':'Энэ хэмжээний подоны багтаамж баталгаажаагүй. Гараар шалгаж оруулна.';$('usePallet').classList.toggle('hidden',suggestion===null||current?.locked);}\nfunction edited(event){if(event&&event.target!==$('verified'))$('verified').checked=false;dirty=true;$('send').disabled=true;$('preview').classList.add('hidden');calculate();msg('Өөрчлөлт хадгалагдаагүй. Хадгалсны дараа батлах боломжтой.');}\ninputs.forEach(el=>el.addEventListener('input',edited));$('verified').onchange=edited;$('usePallet').onclick=()=>{input(10).value=suggestion;edited()};\n$('form').onsubmit=async e=>{e.preventDefault();if(busy||!current)return;let values=[...current.values];inputs.forEach(el=>values[+el.dataset.i]=el.type==='number'?(el.value===''?'':Number(el.value)):el.value);values[15]=$('verified').checked?'ТИЙМ':'';lock(true);try{apply(await rpc('salesDashboardSave',{id:values[0],values,token:current.token}));msg('Хадгаллаа. Урьдчилсан саналыг хянаад батална уу.','success')}catch(e){msg(e.message,'error')}finally{lock(false)}};\n$('send').onclick=async()=>{if(busy||dirty||!current||(current.locked&&current.state!=='APPROVED'))return;if(!confirm(current.values[1]+'\\nИмэйл: '+current.values[3]+'\\nНийт: '+$('total').textContent+'\\n\\nБаталж, PDF саналыг энэ хаяг руу илгээх үү?'))return;lock(true);try{apply(await rpc('salesDashboardSend',{id:current.values[0],token:current.token}));msg('Баталсан PDF саналыг имэйлээр илгээлээ.','success')}catch(e){msg(e.message,'error')}finally{lock(false)}};\n$('refresh').onclick=refresh;$('search').oninput=showRows;refresh();\n</script></body></html>\n";}
