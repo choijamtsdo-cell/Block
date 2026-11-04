@@ -1,0 +1,10 @@
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const c={console};vm.createContext(c);vm.runInContext(fs.readFileSync(__dirname+'/../Code.gs','utf8'),c);
+const order=c.khPhoneItems_([{thickness:300,volume:10.25},{thickness:200,volume:4.75}]);
+assert.equal(order.volume,15);assert.equal(order.pieces,403);
+const items=c.khQuoteItems_({product:order.breakdown,volume:15,unitPrice:300000,subtotal:4500000});
+assert.equal(items.length,2);assert.equal(items[0].spec,'600 × 240 × 300 мм');assert.equal(items[1].spec,'600 × 240 × 200 мм');
+assert.equal(items[0].total,3075000);assert.equal(items[1].total,1425000);
+for(const input of [[],[{thickness:150,volume:1}],[{thickness:200,volume:0}],[{thickness:200,volume:1},{thickness:200,volume:2}],[{thickness:300,volume:90000},{thickness:200,volume:90000}]])assert.throws(()=>c.khPhoneItems_(input));
+const fallback=c.khQuoteItems_({product:order.breakdown,volume:99,unitPrice:300000,subtotal:29700000});assert.equal(fallback.length,1);assert.equal(fallback[0].volume,99);
+console.log('PASS: multiple products, total volume, packing, PDF line totals, rejected invalid/duplicate sizes, mismatched breakdown fallback. No real mail or Google calls.');
