@@ -300,7 +300,7 @@ body.sales-tool-open{overflow:hidden}
 
 <footer class="footer"><div class="container footer-inner">
  <div class="footer-brand"><span class="footer-mark"></span><span>Хантайшир Эко Блок<small>Тайшир үйлдвэрлэл, технологийн парк</small></span></div>
- <nav class="footer-links" aria-label="Доод цэс"><a href="#products">Бүтээгдэхүүн</a><a href="#calculator">Тооцоолуур</a><a href="#dealer">Гэрээт борлуулагч болох</a></nav>
+ <nav class="footer-links" aria-label="Доод цэс"><a href="#products">Бүтээгдэхүүн</a><a href="#home-calculator">Тооцоолуур</a><a href="#dealer">Гэрээт борлуулагч болох</a></nav>
  <div class="footer-copyright">© <span id="year">2026</span> Хантайшир Эко Блок. Бүх эрх хуулиар хамгаалагдсан.</div>
 </div></footer>
 
@@ -461,7 +461,7 @@ function drawBlock(t){const img=$('productImg'),src=BLOCK_IMAGES[t];
 function read(id){const v=$(id).value.trim();return v===''?NaN:Number(v)}
 function setSize(mm,{silent}={}){$('thickness').value=String(mm);$$('[data-size]').forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.size)===mm)));$$('#sizeTable tr').forEach(tr=>tr.classList.toggle('is-active',Number(tr.dataset.row)===mm));drawBlock(mm);if(!silent)calculate()}
 function emptyResults(){$('resultVolume').textContent='— м³';$('resultPrice').textContent='— ₮';$('resultArea').textContent='— м² гадна хана'}
-function calcError(msg){$('calcError').style.display='block';$('calcError').textContent=msg;calc=null;emptyResults();return null}
+function calcError(msg){$('calcError').style.display='block';$('calcError').textContent=msg;calc=null;emptyResults();syncHomeCalculator();return null}
 function calculate(){
  const l=read('length'),w=read('width'),h=read('height'),opens=read('openings'),t=Number($('thickness').value),reserve=Number($('reserve').value);
  const innerLength=read('innerLength'),innerOpenings=read('innerOpenings');
@@ -481,7 +481,7 @@ function calculate(){
  const pieces=outerPieces+innerPieces,volume=Number((outerVolume+innerVolume).toFixed(4));
  calc={area,innerArea,t,pieces,volume,outerPieces,innerPieces,outerVolume,innerVolume,price:Math.round(volume*SITE.priceM3)};
  $('resultArea').textContent=fmt(area)+' м² гадна хана'+(innerArea>0?' + '+fmt(innerArea)+' м² дотор хана':'');
- $('resultVolume').textContent=fmt(volume,4)+' м³';$('resultPrice').textContent=mnt(calc.price);return calc
+ $('resultVolume').textContent=fmt(volume,4)+' м³';$('resultPrice').textContent=mnt(calc.price);syncHomeCalculator();return calc
 }
 $$('#calcForm input, #calcForm select').forEach(el=>el.addEventListener('input',()=>el.id==='thickness'?setSize(Number(el.value)):calculate()));
 $$('[data-size]').forEach(btn=>btn.addEventListener('click',()=>{setSize(Number(btn.dataset.size));notify(`${btn.dataset.size} мм блокийг тооцоолуурт сонголоо`)}));
@@ -715,6 +715,27 @@ salesTool.addEventListener('click',e=>{const r=salesTool.getBoundingClientRect()
 salesTool.addEventListener('close',()=>document.body.classList.remove('sales-tool-open'));
 function salesToolFromHash(){if(location.hash==='#quote')openSalesTool('request');else if(location.hash==='#calculator')openSalesTool('calc')}
 salesToolFromHash();addEventListener('hashchange',salesToolFromHash);
+
+
+/* Homepage and quote dialog share one calculator state and calculation path. */
+const homeCalculator=$('calculator').cloneNode(true);
+homeCalculator.id='home-calculator';homeCalculator.hidden=false;
+homeCalculator.removeAttribute('role');homeCalculator.removeAttribute('aria-labelledby');homeCalculator.removeAttribute('tabindex');
+const homeIds=new Map();
+homeCalculator.querySelectorAll('[id]').forEach(el=>{homeIds.set(el.id,'home-'+el.id);el.id='home-'+el.id});
+homeCalculator.querySelectorAll('[for],[aria-describedby]').forEach(el=>{for(const name of ['for','aria-describedby'])if(el.hasAttribute(name))el.setAttribute(name,el.getAttribute(name).split(' ').map(id=>homeIds.get(id)||id).join(' '))});
+document.querySelector('main').insertBefore(homeCalculator,$('dealer'));
+function syncHomeCalculator(){
+ if(!document.getElementById('home-calculator'))return;
+ for(const id of ['length','width','height','openings','thickness','reserve','innerLength','innerOpenings'])$('home-'+id).value=$(id).value;
+ for(const id of ['resultArea','resultVolume','resultPrice'])$('home-'+id).textContent=$(id).textContent;
+ $('home-calcError').textContent=$('calcError').textContent;$('home-calcError').style.display=$('calcError').style.display;
+}
+homeCalculator.querySelectorAll('input,select').forEach(el=>el.addEventListener('input',()=>{const source=$(el.id.slice(5));source.value=el.value;source.dispatchEvent(new Event('input',{bubbles:true}))}));
+$('home-calcForm').addEventListener('submit',e=>e.preventDefault());
+$('home-calcForm').addEventListener('reset',e=>{e.preventDefault();$('calcForm').reset()});
+$('home-toQuote').addEventListener('click',()=>$('toQuote').click());
+syncHomeCalculator();
 
 /* --- Техникийн үзүүлэлтийн хөдөлгөөн --- */
 const techScene=$('techScene'),techMotion=$('techMotion');
