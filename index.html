@@ -131,7 +131,7 @@ dialog{width:min(640px,calc(100vw - 30px));max-height:90vh;overflow:auto;border:
 </style>
 <link rel="stylesheet" href="./ai-chat/chat.css?v=20261102-2">
 <script src="./ai-chat/chat.js?v=20261102-2" defer></script>
-</head>
+<style>.block-choices{border:1px solid #dce7df;border-radius:14px;padding:18px;min-width:0}.block-choices legend{font-weight:700;padding:0 6px;font-size:14px}.block-choice{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:16px;align-items:center;padding:12px 0;border-bottom:1px solid #e4ece6}.block-choice label{display:flex;align-items:center;gap:10px;margin:0}.block-choice input[type=checkbox]{width:19px;height:19px;accent-color:#126a45}.block-choice input[type=number]{min-width:0;width:100%}.block-choice small{display:block;color:#6c7f72}.block-choice:has(input:checked){color:#0c6140}@media(max-width:480px){.block-choice{grid-template-columns:minmax(0,1fr) 110px;gap:8px}}</style></head>
 <body class="no-js">
 <a class="skip" href="#main">Үндсэн агуулга руу шилжих</a>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -270,8 +270,7 @@ dialog{width:min(640px,calc(100vw - 30px));max-height:90vh;overflow:auto;border:
     <div class="input-wrap"><label for="clientName">Нэр / байгууллага *</label><input id="clientName" name="name" class="form-control" autocomplete="name" required="" maxlength="120" placeholder="Таны нэр"></div>
     <div class="input-wrap"><label for="clientPhone">Утас *</label><input id="clientPhone" name="phone" class="form-control" type="tel" inputmode="tel" autocomplete="tel" required="" pattern="(\+?976( |-)?)?[0-9]{4}( |-)?[0-9]{4}" title="8 оронтой утасны дугаар, жишээ: 8600 0254" placeholder="8600 0254"></div>
     <div class="input-wrap"><label for="clientLocation">Төслийн байршил *</label><input id="clientLocation" name="location" class="form-control" autocomplete="address-level1" required="" maxlength="120" placeholder="Аймаг, сум"></div>
-    <div class="input-wrap"><label for="clientVolume">Хэмжээ (м³) *</label><input id="clientVolume" name="volume" class="form-control" type="number" inputmode="decimal" min="0.1" max="100000" step="any" required="" placeholder="Жишээ: 100"></div>
-    <div class="input-wrap"><label for="clientProduct">Блокийн хэмжээ *</label><select id="clientProduct" name="product" class="form-control" required=""><option value="300">600 × 240 × 300 мм</option><option value="200">600 × 240 × 200 мм</option><option id="mixedProductOption" value="mixed" hidden>Гадна + дотор ханын блок</option></select></div>
+    <fieldset class="input-wrap span2 block-choices"><legend>Блокийн хэмжээ — нэг буюу хэд хэдийг сонгоно уу *</legend><div id="quoteProducts"></div><p class="hint">Сонгосон хэмжээ тус бүрийн м³-ийг оруулна уу.</p><strong id="quoteProductsTotal" aria-live="polite">Нийт: 0 м³</strong></fieldset>
     <div class="input-wrap"><label for="clientEmail">Имэйл (заавал биш)</label><input id="clientEmail" name="email" class="form-control" type="email" autocomplete="email" placeholder="name@example.com"></div>
     <div class="input-wrap span2"><label for="clientNotes">Нэмэлт тайлбар</label><textarea id="clientNotes" name="notes" class="form-control" rows="2" maxlength="700" placeholder="Худалдан авах хугацаа, төслийн онцлог..."></textarea></div>
    </div>
@@ -441,7 +440,7 @@ function drawBlock(t){const img=$('productImg'),src=BLOCK_IMAGES[t];
 
 /* --- Тооцоолуур --- */
 function read(id){const v=$(id).value.trim();return v===''?NaN:Number(v)}
-function setSize(mm,{silent}={}){$('thickness').value=String(mm);$('clientProduct').value=String(mm);$$('[data-size]').forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.size)===mm)));$$('#sizeTable tr').forEach(tr=>tr.classList.toggle('is-active',Number(tr.dataset.row)===mm));drawBlock(mm);if(!silent)calculate()}
+function setSize(mm,{silent}={}){$('thickness').value=String(mm);$$('[data-size]').forEach(el=>el.setAttribute('aria-pressed',String(Number(el.dataset.size)===mm)));$$('#sizeTable tr').forEach(tr=>tr.classList.toggle('is-active',Number(tr.dataset.row)===mm));drawBlock(mm);if(!silent)calculate()}
 function emptyResults(){$('resultVolume').textContent='— м³';$('resultPrice').textContent='— ₮';$('resultArea').textContent='— м² гадна хана'}
 function calcError(msg){$('calcError').style.display='block';$('calcError').textContent=msg;calc=null;emptyResults();return null}
 function calculate(){
@@ -470,15 +469,19 @@ $$('[data-size]').forEach(btn=>btn.addEventListener('click',()=>{setSize(Number(
 $('calcForm').addEventListener('reset',()=>setTimeout(()=>setSize(300),0));
 $('toQuote').addEventListener('click',()=>{
  if(!calculate()){notify('Тооцоолуурын утгуудыг шалгана уу');return}
- const mixed=calc.innerPieces>0&&calc.t!==200;
- quoteBreakdown=mixed?{volume:calc.volume,pieces:calc.pieces,t:calc.t,summary:'Гадна '+calc.t+' мм: '+fmt(calc.outerVolume,4)+' м³; Дотор 200 мм: '+fmt(calc.innerVolume,4)+' м³'}:null;
- $('mixedProductOption').hidden=!mixed;$('clientVolume').value=String(calc.volume);$('clientProduct').value=mixed?'mixed':String(calc.t);
- $('quoteMixHint').hidden=!mixed;$('quoteMixHint').textContent=mixed?quoteBreakdown.summary:'';
+ setQuoteItems([{thickness:calc.t,volume:calc.outerVolume},...(calc.innerVolume>0?[{thickness:200,volume:calc.innerVolume}]:[])]);
  $('quote').scrollIntoView({behavior:'smooth'});setTimeout(()=>$('clientName').focus({preventScroll:true}),600);notify('Тооцооны хэмжээг хүсэлтэд орууллаа')
 });
-function clearQuoteBreakdown(){if(!quoteBreakdown)return;quoteBreakdown=null;$('mixedProductOption').hidden=true;if($('clientProduct').value==='mixed')$('clientProduct').value='300';$('quoteMixHint').hidden=true}
-$('clientVolume').addEventListener('input',clearQuoteBreakdown);
-$('clientProduct').addEventListener('change',clearQuoteBreakdown);
+// SIZES is the catalog: add approved thicknesses there to extend the quote choices.
+function renderQuoteProducts(){
+ $('quoteProducts').innerHTML=SIZES.map(t=>`<div class="block-choice"><label><input type="checkbox" data-quote-size="${t}" aria-controls="quoteVolume${t}"><span>600 × 240 × ${t} мм</span></label><input id="quoteVolume${t}" class="form-control" data-quote-volume="${t}" type="number" inputmode="decimal" min="0.1" max="100000" step="any" disabled aria-label="${t} мм блокийн хэмжээ, м³" placeholder="м³"></div>`).join('');
+ $$('[data-quote-size]').forEach(el=>el.onchange=()=>{const n=$('quoteVolume'+el.dataset.quoteSize);n.disabled=!el.checked;n.required=el.checked;updateQuoteProducts()});
+ $$('[data-quote-volume]').forEach(el=>el.oninput=updateQuoteProducts);updateQuoteProducts();
+}
+function readQuoteItems(){return $$('[data-quote-size]:checked').map(el=>({thickness:Number(el.dataset.quoteSize),volume:Number($('quoteVolume'+el.dataset.quoteSize).value)}))}
+function updateQuoteProducts(){const volume=readQuoteItems().reduce((s,x)=>s+x.volume,0);$('quoteProductsTotal').textContent='Нийт: '+fmt(volume,4)+' м³ · '+mnt(volume*SITE.priceM3);activeLeadId=null}
+function setQuoteItems(items){const totals=new Map();items.forEach(x=>totals.set(x.thickness,(totals.get(x.thickness)||0)+x.volume));$$('[data-quote-size]').forEach(el=>{const t=Number(el.dataset.quoteSize),n=$('quoteVolume'+t);el.checked=totals.has(t);n.disabled=!el.checked;n.required=el.checked;n.value=el.checked?Number(totals.get(t).toFixed(4)):''});updateQuoteProducts()}
+renderQuoteProducts();
 // Дилерийн хүсэлтийг бүтээгдэхүүний үнийн саналын маягтаас бүрэн тусгаарласан.
 
 /* --- Google Sheets Apps Script: CORS preflight-гүй HTML form POST + буцах ACK --- */
@@ -642,11 +645,10 @@ function showDialog(q,sent){
  $('quoteDialog').showModal()}
 $('quoteForm').addEventListener('submit',async e=>{
  e.preventDefault();const f=$('quoteForm');if(!f.reportValidity())return;
- const volume=read('clientVolume'),selected=$('clientProduct').value;
- const mixed=selected==='mixed'&&quoteBreakdown&&Math.abs(quoteBreakdown.volume-volume)<.0001;
- if(selected==='mixed'&&!mixed){notify('Тооцоолуураас хэмжээг дахин оруулна уу');return}
- const t=mixed?quoteBreakdown.t:Number(selected);
- quote={name:$('clientName').value.trim(),phone:$('clientPhone').value.trim(),location:$('clientLocation').value.trim(),volume,pieces:mixed?quoteBreakdown.pieces:Math.ceil(volume/blockVol(t)-1e-9),email:$('clientEmail').value.trim(),notes:$('clientNotes').value.trim(),product:mixed?'Гадна '+t+' мм + дотор 200 мм':$('clientProduct').selectedOptions[0].textContent,breakdown:mixed?quoteBreakdown.summary:'',total:Math.round(volume*SITE.priceM3),date:new Date().toLocaleDateString('mn-MN'),requestId:activeLeadId||(activeLeadId=makeQuoteRequestId()),approvalStatus:'pending_sales_review',documentType:'estimate'};
+ const items=readQuoteItems(),volume=Number(items.reduce((sum,x)=>sum+x.volume,0).toFixed(4));
+ if(!items.length||items.some(x=>!Number.isFinite(x.volume)||x.volume<0.1)||volume>100000){notify('Блокийн хэмжээ сонгож, хэмжээ бүрийн м³-ийг зөв оруулна уу');return}
+ const breakdown=items.map(x=>'600 × 240 × '+x.thickness+' мм: '+fmt(x.volume,4)+' м³').join('; ');
+ quote={name:$('clientName').value.trim(),phone:$('clientPhone').value.trim(),location:$('clientLocation').value.trim(),volume,pieces:items.reduce((n,x)=>n+Math.ceil(x.volume/blockVol(x.thickness)-1e-9),0),email:$('clientEmail').value.trim(),notes:$('clientNotes').value.trim(),product:items.map(x=>'600 × 240 × '+x.thickness+' мм').join(' + '),breakdown,total:Math.round(volume*SITE.priceM3),date:new Date().toLocaleDateString('mn-MN'),requestId:activeLeadId||(activeLeadId=makeQuoteRequestId()),approvalStatus:'pending_sales_review',documentType:'estimate'};
  let sent=false,sendError='';
  if(SITE.sheetWebhook||SITE.formEndpoint){
   const btn=$('quoteSubmit'),label=$('quoteSubmitLabel'),prev=label.textContent;
@@ -659,7 +661,7 @@ $('quoteForm').addEventListener('submit',async e=>{
    }
   }catch(err){sendError=err.message||'Илгээхэд алдаа гарлаа.'}
   btn.disabled=false;label.textContent=prev;
-  if(sent){f.reset();activeLeadId=null;quoteBreakdown=null;$('mixedProductOption').hidden=true;$('quoteMixHint').hidden=true}
+  if(sent){f.reset();setQuoteItems([]);activeLeadId=null}
   else notify(sendError||'Хүсэлт бүртгэсэн эсэхийг баталгаажуулж чадсангүй.');
  }
  showDialog(quote,sent);
