@@ -18,7 +18,7 @@ function init(){
  };
  function setSize(value,syncProduct){
   size=(Number(value)===200)?200:300;
-  const depth=desktop.matches?(size===200?75:108):(size===200?60:88);
+  const depth=desktop.matches?(size===200?88:132):(size===200?71:107);
   anchor.style.setProperty('--kh-depth',depth+'px');
   sizeLabel.textContent='600 × 240 × '+size+' мм';
   stage.setAttribute('aria-label','AAC блокийн 3D дүрслэл. 600 × 240 × '+size+' мм. Хулганаар чирэх, сумны товчлуураар эргүүлэх боломжтой.');
