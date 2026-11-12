@@ -145,7 +145,9 @@ body.sales-tool-open{overflow:hidden}
 #salesToolDialog .calc-panel{max-width:780px;margin:auto;padding:22px;box-shadow:none}#salesToolDialog .calc-foot{flex-wrap:wrap}
 @media(max-width:600px){#salesToolDialog{width:calc(100vw - 12px);max-height:96dvh;border-radius:16px}.sales-tool-head{padding:18px 16px 0}.sales-tool-heading h2{font-size:22px}.sales-tool-heading p{font-size:12px;margin-bottom:14px}.sales-tool-body{padding:18px 16px}.sales-tool-tabs [role=tab]{padding:10px 12px;font-size:13px}#salesToolDialog .calc-panel{padding:15px}#salesToolDialog .calc-fields{grid-template-columns:1fr 1fr}#salesToolDialog .quote-fields{grid-template-columns:1fr}#salesToolDialog .span2{grid-column:1/-1}#salesToolDialog .calc-result{gap:14px}#salesToolDialog .calc-result .price{font-size:24px}}
 @media(prefers-reduced-motion:no-preference){#salesToolDialog[open]{animation:sales-tool-enter .18s ease-out}@keyframes sales-tool-enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}}
-</style></head>
+</style><link rel="stylesheet" href="./assets/motion.css?v=20261112">
+<script src="./assets/motion.js?v=20261112" defer></script>
+</head>
 <body class="no-js">
 <a class="skip" href="#main">Үндсэн агуулга руу шилжих</a>
 <svg xmlns="http://www.w3.org/2000/svg" style="position:absolute;width:0;height:0;overflow:hidden" aria-hidden="true">
@@ -198,6 +200,43 @@ body.sales-tool-open{overflow:hidden}
   <div class="hero-controls"><button class="hero-arrow" id="pauseSlide" aria-label="Зураг солигдохыг үргэлжлүүлэх"><svg class="icon"><use href="#i-play"></use></svg></button><button class="hero-arrow" id="prevSlide" aria-label="Өмнөх зураг"><svg class="icon"><use href="#i-left"></use></svg></button><button class="hero-arrow" id="nextSlide" aria-label="Дараагийн зураг"><svg class="icon"><use href="#i-right"></use></svg></button></div>
  </div>
 </div></section>
+
+
+<!-- Independent 3D AAC block visualizer (the underlying sales tools remain unchanged). -->
+<section class="kh-3d-section" id="kh3d" aria-labelledby="kh3dTitle">
+ <div class="container kh-3d-layout">
+  <div class="kh-3d-copy" data-reveal="">
+   <span class="kh-3d-kicker">Интерактив танилцуулга</span>
+   <h2 id="kh3dTitle">Блокоо <em>3D-ээр</em> эргүүлж үзээрэй</h2>
+   <p>Хантайшир эко блокийн зузааныг сонгож, дүрслэлийг хүссэн өнцгөөсөө харна уу. Хулганаар чирэх эсвэл гарын сум товчлуураар эргүүлж болно.</p>
+   <div class="kh-width-label" id="khWidthLabel">Блокийн зузаан</div>
+   <div class="kh-width-switch" role="group" aria-labelledby="khWidthLabel">
+    <button class="kh-width-btn" data-kh-size="200" type="button" aria-pressed="false">200 мм</button>
+    <button class="kh-width-btn" data-kh-size="300" type="button" aria-pressed="true">300 мм</button>
+   </div>
+   <div class="kh-size-info"><strong id="khSizeLabel" aria-live="polite">600 × 240 × 300 мм</strong><small>Урт × өндөр × зузаан</small></div>
+   <div class="kh-3d-links"><a href="#products">Бүтээгдэхүүний дэлгэрэнгүй</a><a href="#home-calculator">Блок тооцоолох</a></div>
+  </div>
+  <div class="kh-viewer-wrap" data-reveal="">
+   <div class="kh-viewer" id="khViewer" role="group" tabindex="0" data-auto="true" aria-label="AAC блокийн 3D дүрслэл. Хулганаар чирж эсвэл сумны товчлуураар эргүүлнэ.">
+    <div class="kh-viewer-tag" aria-hidden="true">KHANTAISHIR <strong>AAC / 3D</strong></div>
+    <div class="kh-viewer-shadow" aria-hidden="true"></div>
+    <div class="kh-cube-anchor" aria-hidden="true">
+     <div class="kh-cube">
+      <div class="kh-face kh-face--front"><div class="kh-face-mark"><b>ХАНТАЙШИР</b><small>ЭКО БЛОК</small></div></div>
+      <div class="kh-face kh-face--back"></div>
+      <div class="kh-face kh-face--left"></div>
+      <div class="kh-face kh-face--right"></div>
+      <div class="kh-face kh-face--top"></div>
+      <div class="kh-face kh-face--bottom"></div>
+     </div>
+    </div>
+    <div class="kh-viewer-bottom"><span>↔ Чирээд эргүүлээрэй</span><button class="kh-rotate-btn" type="button" id="khRotate" aria-pressed="true">⏸ Эргэлтийг зогсоох</button></div>
+   </div>
+   <small style="display:block;font-size:11px;color:#739083;margin:9px 5px 0">Энэ нь бүтээгдэхүүний бодит зураг биш, хэмжээний харьцааг харуулах 3D дүрслэл юм.</small>
+  </div>
+ </div>
+</section>
 
 <div class="benefits"><div class="container benefits-inner">
  <div class="benefit"><svg class="icon"><use href="#i-leaf"></use></svg><div><b>Хөнгөн жин</b><span>Нягт 600 кг/м³-ээс бага — суурь, бүтээцийн ачааллыг бууруулна</span></div></div>
