@@ -1,0 +1,102 @@
+/*
+  Хантайшир Эко Блок — Minimal motion enhancement
+  Only subtle scroll reveal and hover transitions.
+  No 3D, parallax, JavaScript or changes to quotation/calculator logic.
+*/
+
+/* Slightly shorter travel and calmer timing for existing scroll reveals. */
+[data-reveal] {
+  transform: translateY(12px);
+  transition:
+    opacity .58s ease,
+    transform .58s cubic-bezier(.22, 1, .36, 1);
+}
+[data-reveal].seen,
+.no-js [data-reveal],
+body.editing [data-reveal] {
+  transform: none;
+}
+
+/* The four benefits appear gently one after the other. */
+.benefits-inner .benefit:nth-child(2)[data-reveal] { transition-delay: .06s; }
+.benefits-inner .benefit:nth-child(3)[data-reveal] { transition-delay: .12s; }
+.benefits-inner .benefit:nth-child(4)[data-reveal] { transition-delay: .18s; }
+
+/* Same small stagger for the visible contact items. */
+.contact-tiles .contact-tile:nth-child(2)[data-reveal] { transition-delay: .07s; }
+
+/* Keep the hero introduction restrained and unchanged in layout. */
+.hero-copy > * { animation-duration: .62s; }
+@keyframes enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .benefit {
+    border-radius: 10px;
+    transition:
+      background-color .25s ease,
+      box-shadow .25s ease,
+      transform .25s ease;
+  }
+  .benefit:hover {
+    transform: translateY(-2px);
+    background: rgba(233, 246, 236, .45);
+    box-shadow: 0 0 0 6px rgba(233, 246, 236, .4);
+  }
+  .benefit:hover .icon { transform: translateY(-2px); }
+
+  .product-shot img {
+    transition: opacity .25s ease, transform .35s ease;
+  }
+  .product-shot:hover img { transform: scale(1.018); }
+
+  .about-picture img {
+    transition: transform .4s ease;
+  }
+  .about-picture:hover img { transform: scale(1.025); }
+
+  .contact-tile {
+    border-radius: 10px;
+    transition: transform .28s ease, background-color .28s ease;
+  }
+  .contact-tile:hover {
+    transform: translateY(-2px);
+    background: rgba(235, 247, 237, .4);
+  }
+
+  .size-link {
+    transition: background-color .2s ease, border-color .2s ease, transform .2s ease;
+  }
+  .size-link:hover { transform: translateY(-1px); }
+
+  .btn:hover { transform: translateY(-2px); }
+  .spec:hover { transform: translateY(-2px); }
+  .tech-callout:hover,
+  .tech-callout:focus-visible { transform: translateY(-2px); }
+}
+
+/* Respect reduced-motion preferences; accessibility takes priority. */
+@media (prefers-reduced-motion: reduce) {
+  [data-reveal] {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+  .hero-copy > * { animation: none !important; }
+  .benefit:hover,
+  .product-shot:hover img,
+  .about-picture:hover img,
+  .contact-tile:hover,
+  .size-link:hover,
+  .btn:hover,
+  .spec:hover,
+  .tech-callout:hover,
+  .tech-callout:focus-visible {
+    transform: none !important;
+  }
+}
+@media print {
+  [data-reveal] { opacity: 1 !important; transform: none !important; }
+}
